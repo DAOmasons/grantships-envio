@@ -94,9 +94,40 @@ GameManagerStrategyContract.RecipientRejected.handler(({ event, context }) => {
 
   context.GrantShip.set({
     ...ship,
+    status: GameStatus.Rejected,
     isRejected: true,
     isAwaitingApproval: false,
     rejectedTime: event.blockTimestamp,
+    applicationReviewReason_id: event.params.reason[1],
+  });
+});
+
+GameManagerStrategyContract.RecipientAccepted.loader(({ event, context }) => {
+  context.GrantShip.load(event.params.recipientAddress, {});
+});
+
+GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
+  const ship = context.GrantShip.get(event.params.recipientAddress);
+
+  if (!ship) {
+    context.log.error(
+      `Ship not found for address ${event.params.recipientAddress}`
+    );
+    return;
+  }
+
+  context.RawMetadata.set({
+    id: event.params.reason[1],
+    protocol: event.params.reason[0],
+    pointer: event.params.reason[1],
+  });
+
+  context.GrantShip.set({
+    ...ship,
+    status: GameStatus.Accepted,
+    isApproved: true,
+    isAwaitingApproval: false,
+    approvedTime: event.blockTimestamp,
     applicationReviewReason_id: event.params.reason[1],
   });
 });
