@@ -128,9 +128,9 @@ type GrantShip @entity {
   hasSubmittedApplication: Boolean
   # # Game Manager => RecipientRejected/Accepted
   isApproved: Boolean
-  approvedTime: BigInt
+  approvedTime: Int
   isRejected: Boolean
-  rejectedTime: BigInt
+  rejectedTime: Int
   applicationReviewReason: RawMetadata
   # # Game Manager => ShipLaunched
   poolId: BigInt
