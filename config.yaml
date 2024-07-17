@@ -1,0 +1,60 @@
+name: Grant Ships Envio
+contracts:
+  - name: Registry
+    handler: src/Registry.ts
+    abi_file_path: abis/Registry.json
+    events:
+    - event: ProfileCreated(bytes32 indexed profileId, uint256 nonce, string name, (uint256,string) metadata, address owner, address anchor)
+    - event: ProfileMetadataUpdated(bytes32 indexed profileId, (uint256,string) metadata)
+      isAsync: true
+    - event: RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
+    - event: RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
+  - name: GameManagerFactory
+    handler: src/GameManagerFactory.ts
+    events:
+    - event: FactoryInitialized(address rootAccount)
+    - event: GameManagerDeployedWithPool(address gameManagerAddress, bytes32 profileId, uint256 poolId, string templateName, address tokenAddress, bytes initData, (uint256,string) poolMetadata, (uint256,string) profileMetadata)
+    - event: RootAccountSwitched(address newRootAccount)
+    - event: TemplateCreated(string name, address templateAddress)
+  - name: GameManagerStrategy
+    handler: src/GameManagerStrategy.ts
+    events:
+    - event: Registered(address anchorAddress, bytes applicationData, address sender)
+    - event: GameManagerInitialized(uint256 gameFacilitatorId,address hatsAddress,address rootAccount,address token,uint256 poolId)
+    - event: RoundCreated(uint256 gameIndex,uint256 totalRoundAmount)
+    - event: ShipLaunched(address shipAddress,uint256 shipPoolId,address recipientId,string shipName,(uint256,string) metadata)
+    - event: RecipientRejected(address recipientAddress,(uint256,string) reason)
+    - event: RecipientAccepted(address recipientAddress,(uint256,string) reason)
+    - event: GameActive(bool active,uint256 gameIndex)
+    - event: UpdatePosted(string tag,uint256 role,address recipientId,(uint256,string) content)
+    - event: Allocated(address recipientId, uint256 amount,address tokenAddress, address sender)
+    - event: Distributed(address recipientId, address shipAddress, uint256 grantAmount, address sender)
+    - event: GameRoundTimesCreated(uint256 gameRoundIndex,uint256 startTime,uint256 endTime)
+networks:
+- id: 421614 # Arbitrum Sepolia
+  start_block: 39353224
+  end_block: null
+  contracts:
+  - name: Registry
+    abi_file_path: abis/Registry.json
+    address: 
+    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+  - name: GameManagerFactory
+    address: 
+    - 0x103f8273b0ea01ffd5a457ed51fdaca81e971378
+  - name: GameManagerStrategy
+    address:   
+- id: 42161 # Arbitrum One
+  start_block: 195499276
+  end_block: null
+  contracts:
+  - name: Registry
+    address: 
+    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+  - name: GameManagerFactory
+    address:
+    - 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
+  - name: GameManagerStrategy
+    address:
+
+  

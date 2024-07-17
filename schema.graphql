@@ -1,0 +1,157 @@
+type GameManagerFactory {
+  id: ID!
+  rootAccount: String!
+  chainId: Int!
+  createdAt: Int!
+}
+
+type GameManagerTemplate {
+  id: ID!
+  name: String!
+  address: String!
+  chainId: Int!
+  createdAt: Int!
+}
+
+type RawMetadata {
+  id: ID!
+  protocol: BigInt!
+  pointer: String!
+}
+
+type GameManager {
+  id: ID!
+  template: GameManagerTemplate!
+  poolId: BigInt!
+  profileId: String!
+  chainId: Int!
+  createdAt: Int!
+  tokenAddress: String!
+  currentRoundNumber: BigInt!
+  poolMetadataPointer: String!
+  poolMetadataProtocol: BigInt!
+  profileMetadataPointer: String!
+  profileMetadataProtocol: BigInt!
+  initData: Bytes!
+  gameRounds: [GameRound!]! @derivedFrom(field: "gameManager")
+  # On Initialized
+  gameFacilitatorId: BigInt
+  poolFunds: BigInt
+  currentRound: GameRound
+  gmRootAccount: String
+}
+
+#Init runs before the GM entity is created
+#So we use this entity to pass the GMInitParams
+type GMInitParams {
+  id: ID!
+  gameFacilitatorId: BigInt
+  gmRootAccount: String
+}
+
+type GameRound {
+  id: ID!
+  startTime: BigInt!
+  endTime: BigInt!
+  totalRoundAmount: BigInt!
+  totalAllocatedAmount: BigInt!
+  totalDistributedAmount: BigInt!
+  gameStatus: Int!
+  gameManager: GameManager!
+  ships: [GrantShip!]! @derivedFrom(field: "gameRound")
+  isGameActive: Boolean!
+  realStartTime: BigInt
+  realEndTime: BigInt
+}
+
+type ProfileMemberGroup {
+  id: ID!
+  role: String!
+  addresses: [String!]!
+}
+
+type ProfileIdToAnchor {
+  id: ID!
+  profileId: String!
+  anchor: String!
+}
+
+type Project @entity {
+  id: String!
+  chainId: Int!
+  profileId: String! # bytes32
+  status: Int! # uint8
+  nonce: BigInt! # uint256
+  name: String! # string
+  pastNames: [String!]!
+  metadata: RawMetadata! # ProjectMetadata
+  pastProfileIds: [String!]!
+  hasEditedProfile: Boolean!
+  owner: String! # address
+  members: ProfileMemberGroup
+  anchor: String! # address
+  grants: [Grant!]! @derivedFrom(field: "project")
+  # members: ProfileMemberGroup
+  totalAmountReceived: BigInt!
+}
+
+type GrantShip @entity {
+  # Registry => ProfileCreated
+  id: ID!
+  chainId: Int!
+  profileId: String! # bytes32
+  nonce: BigInt! # uint256
+  name: String! # string
+  profileMetadata: RawMetadata!
+  pastProfileIds: [String!]!
+  pastNames: [String!]!
+  hasEditedProfile: Boolean!
+  owner: String! # address
+  anchor: String! # address
+  status: Int!
+  poolFunded: Boolean!
+  balance: BigInt!
+  shipAllocation: BigInt!
+  totalAvailableFunds: BigInt!
+  totalRoundAmount: BigInt!
+  totalAllocated: BigInt!
+  totalDistributed: BigInt!
+  grants: [Grant!]! @derivedFrom(field: "ship")
+  # Registry => Role Granted
+  # alloProfileMembers: ProfileMemberGroup
+  # # Game Manager => Registered
+  gameRound: GameRound
+  gameManager: GameManager
+  shipApplicationBytesData: String
+  applicationSubmittedTime: Int
+  isAwaitingApproval: Boolean
+  hasSubmittedApplication: Boolean
+  # # Game Manager => RecipientRejected/Accepted
+  isApproved: Boolean
+  approvedTime: BigInt
+  isRejected: Boolean
+  rejectedTime: BigInt
+  applicationReviewReason: RawMetadata
+  # # Game Manager => ShipLaunched
+  poolId: BigInt
+  hatId: String
+  shipContractAddress: String # address
+  shipLaunched: Boolean
+  poolActive: Boolean
+  # # Game Manager => Allocated
+  isAllocated: Boolean
+  # # Game Manager => Distributed
+  isDistributed: Boolean
+}
+
+type Grant {
+  id: ID!
+  ship: GrantShip!
+  project: Project!
+  # project: Project!
+}
+
+type Test {
+  id: ID!
+  name: String!
+}
