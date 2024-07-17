@@ -37,3 +37,37 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
     status: GameStatus.Pending,
   });
 });
+
+GameManagerStrategyContract.RoundCreated.loader(({ event, context }) => {
+  context.GameManager.load(event.srcAddress, {});
+});
+
+GameManagerStrategyContract.RoundCreated.handler(({ event, context }) => {
+  const gameManager = context.GameManager.get(event.srcAddress);
+
+  if (!gameManager) {
+    context.log.error(`GameManager not found for address ${event.srcAddress}`);
+    return;
+  }
+
+  const gameRoundId = `${event.srcAddress}-${event.params.gameIndex}`;
+
+  context.GameRound.set({
+    id: gameRoundId,
+    startTime: BigInt(0),
+    endTime: BigInt(0),
+    totalRoundAmount: event.params.totalRoundAmount,
+    totalAllocatedAmount: BigInt(0),
+    totalDistributedAmount: BigInt(0),
+    gameStatus: GameStatus.Pending,
+    isGameActive: false,
+    gameManager_id: event.srcAddress,
+    realEndTime: undefined,
+    realStartTime: undefined,
+  });
+
+  context.GameManager.set({
+    ...gameManager,
+    currentRound_id: gameRoundId,
+  });
+});
