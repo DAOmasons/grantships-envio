@@ -5,6 +5,7 @@ import {
   gameRoundLoaderConfig,
 } from 'generated';
 import { GameStatus } from './utils/statuses';
+import { addTransaction } from './utils/sync';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
 
@@ -15,6 +16,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       gmRootAccount: event.params.rootAccount,
       gameFacilitatorId: event.params.gameFacilitatorId,
     });
+    addTransaction(event, context.Transaction.set);
   }
 );
 
@@ -41,6 +43,8 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
     applicationSubmittedTime: event.blockTimestamp,
     status: GameStatus.Pending,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.RoundCreated.loader(({ event, context }) => {
@@ -75,6 +79,8 @@ GameManagerStrategyContract.RoundCreated.handler(({ event, context }) => {
     ...gameManager,
     currentRound_id: gameRoundId,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.RecipientRejected.loader(({ event, context }) => {
@@ -105,6 +111,8 @@ GameManagerStrategyContract.RecipientRejected.handler(({ event, context }) => {
     rejectedTime: event.blockTimestamp,
     applicationReviewReason_id: event.params.reason[1],
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.RecipientAccepted.loader(({ event, context }) => {
@@ -135,6 +143,8 @@ GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
     approvedTime: event.blockTimestamp,
     applicationReviewReason_id: event.params.reason[1],
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.ShipLaunched.loader(({ event, context }) => {
@@ -153,6 +163,8 @@ GameManagerStrategyContract.ShipLaunched.handler(({ event, context }) => {
     ...ship,
     shipLaunched: true,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.Allocated.loader(({ event, context }) => {
@@ -195,6 +207,8 @@ GameManagerStrategyContract.Allocated.handler(({ event, context }) => {
     totalAllocatedAmount:
       currentRound.totalAllocatedAmount + event.params.amount,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.Distributed.loader(({ event, context }) => {
@@ -238,6 +252,8 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
     totalDistributedAmount:
       currentRound.totalDistributedAmount + event.params.grantAmount,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerStrategyContract.GameActive.loader(({ event, context }) => {
@@ -268,6 +284,8 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
       isGameActive: true,
       realStartTime: event.blockTimestamp,
     });
+
+    addTransaction(event, context.Transaction.set);
   } else {
     context.GameRound.set({
       ...currentRound,
@@ -280,6 +298,8 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
       ...gameManager,
       currentRound_id: `${event.srcAddress}-${event.params.gameIndex}`,
     });
+
+    addTransaction(event, context.Transaction.set);
   }
 });
 
@@ -314,6 +334,7 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
       startTime: event.params.startTime,
       endTime: event.params.endTime,
     });
+    addTransaction(event, context.Transaction.set);
   }
 );
 

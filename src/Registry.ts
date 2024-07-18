@@ -1,15 +1,11 @@
 import { RegistryContract } from 'generated';
 import { GameStatus } from './utils/statuses';
+import { addTransaction } from './utils/sync';
 
 RegistryContract.ProfileCreated.loader(({ event }) => {});
 
 RegistryContract.ProfileCreated.handler(({ event, context }) => {
   if (event.params.metadata[0] == 103115010001003n) {
-    context.Test.set({
-      id: event.params.profileId,
-      name: event.params.name,
-    });
-
     context.RawMetadata.set({
       id: event.params.metadata[1],
       protocol: event.params.metadata[0],
@@ -38,6 +34,8 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       profileId: event.params.profileId,
       anchor: event.params.anchor,
     });
+
+    addTransaction(event, context.Transaction.set);
   }
   if (event.params.metadata[0] == 103115010001004n) {
     context.RawMetadata.set({
@@ -93,6 +91,8 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       profileId: event.params.profileId,
       anchor: event.params.anchor,
     });
+
+    addTransaction(event, context.Transaction.set);
   }
 });
 
@@ -173,6 +173,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...project.pastProfileIds, project.profileId],
           pastNames: [...project.pastNames, project.name],
         });
+        addTransaction(event, context.Transaction.set);
       } else {
         context.RawMetadata.set({
           id: event.params.metadata[1],
@@ -186,6 +187,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...project.pastProfileIds, project.profileId],
           hasEditedProfile: true,
         });
+        addTransaction(event, context.Transaction.set);
       }
     }
 
@@ -205,6 +207,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...ship.pastProfileIds, ship.profileId],
           hasEditedProfile: true,
         });
+        addTransaction(event, context.Transaction.set);
       } else {
         context.GrantShip.set({
           ...ship,
@@ -212,6 +215,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...ship.pastProfileIds, ship.profileId],
           hasEditedProfile: true,
         });
+        addTransaction(event, context.Transaction.set);
       }
     }
   }

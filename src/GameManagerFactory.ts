@@ -1,4 +1,5 @@
 import { GameManagerFactoryContract } from 'generated';
+import { addTransaction } from './utils/sync';
 
 GameManagerFactoryContract.FactoryInitialized.loader(({ event }) => {});
 
@@ -9,6 +10,8 @@ GameManagerFactoryContract.FactoryInitialized.handler(({ event, context }) => {
     chainId: event.chainId,
     createdAt: event.blockTimestamp,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerFactoryContract.TemplateCreated.loader(({ event }) => {});
@@ -21,6 +24,8 @@ GameManagerFactoryContract.TemplateCreated.handler(({ event, context }) => {
     chainId: event.chainId,
     createdAt: event.blockTimestamp,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerFactoryContract.RootAccountSwitched.loader(({ event, context }) => {
@@ -38,6 +43,8 @@ GameManagerFactoryContract.RootAccountSwitched.handler(({ event, context }) => {
     ...gmFactory,
     rootAccount: event.params.newRootAccount,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GameManagerFactoryContract.GameManagerDeployedWithPool.loader(
@@ -80,5 +87,7 @@ GameManagerFactoryContract.GameManagerDeployedWithPool.handler(
       currentRound_id: undefined,
       gmRootAccount: gmInitParams.gmRootAccount,
     });
+
+    addTransaction(event, context.Transaction.set);
   }
 );
