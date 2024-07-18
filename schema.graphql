@@ -118,7 +118,7 @@ type GrantShip @entity {
   totalDistributed: BigInt!
   grants: [Grant!]! @derivedFrom(field: "ship")
   # Registry => Role Granted
-  # alloProfileMembers: ProfileMemberGroup
+  alloProfileMembers: ProfileMemberGroup
   # # Game Manager => Registered
   gameRound: GameRound
   gameManager: GameManager
@@ -151,7 +151,9 @@ type Grant {
   # project: Project!
 }
 
-type Test {
+type Transaction {
   id: ID!
-  name: String!
+  blockNumber: BigInt!
+  srcAddress: String!
+  txHash: String!
 }

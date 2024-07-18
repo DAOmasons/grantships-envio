@@ -60,6 +60,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       owner: event.params.owner,
       status: GameStatus.None,
       poolFunded: false,
+      alloProfileMembers_id: event.params.profileId,
       balance: BigInt(0),
       shipAllocation: BigInt(0),
       totalAvailableFunds: BigInt(0),
@@ -72,6 +73,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       applicationSubmittedTime: undefined,
       isAwaitingApproval: undefined,
       hasSubmittedApplication: undefined,
+
       isApproved: undefined,
       approvedTime: undefined,
       isRejected: undefined,
@@ -158,6 +160,11 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
         const pointer = event.params.metadata[1].split('##name##')[0];
         const name = event.params.metadata[1].split('##name##')[1];
 
+        context.RawMetadata.set({
+          id: pointer,
+          protocol: event.params.metadata[0],
+          pointer,
+        });
         context.Project.set({
           ...project,
           name,
@@ -167,6 +174,12 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastNames: [...project.pastNames, project.name],
         });
       } else {
+        context.RawMetadata.set({
+          id: event.params.metadata[1],
+          protocol: event.params.metadata[0],
+          pointer: event.params.metadata[1],
+        });
+
         context.Project.set({
           ...project,
           metadata_id: event.params.metadata[1],
