@@ -282,3 +282,40 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
     });
   }
 });
+
+GameManagerStrategyContract.GameRoundTimesCreated.loader(
+  ({ event, context }) => {
+    context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
+  }
+);
+
+GameManagerStrategyContract.GameRoundTimesCreated.handler(
+  ({ event, context }) => {
+    const gameManager = context.GameManager.get(event.srcAddress);
+
+    if (!gameManager) {
+      context.log.error(
+        `GameManager not found for address ${event.srcAddress}`
+      );
+      return;
+    }
+
+    const currentRound = context.GameManager.getCurrentRound(gameManager);
+
+    if (!currentRound) {
+      context.log.error(
+        `Current round not found for GameManager ${gameManager.id}`
+      );
+      return;
+    }
+
+    context.GameRound.set({
+      ...currentRound,
+      startTime: event.params.startTime,
+      endTime: event.params.endTime,
+    });
+  }
+);
+
+GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
+GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {});
