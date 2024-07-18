@@ -32,7 +32,7 @@ type GameManager {
   poolMetadataProtocol: BigInt!
   profileMetadataPointer: String!
   profileMetadataProtocol: BigInt!
-  initData: Bytes!
+  initData: String!
   gameRounds: [GameRound!]! @derivedFrom(field: "gameManager")
   # On Initialized
   gameFacilitatorId: BigInt
@@ -156,4 +156,49 @@ type Transaction {
   blockNumber: BigInt!
   srcAddress: String!
   txHash: String!
+}
+
+type Update {
+  id: ID!
+  scope: Int!
+  tag: String!
+  posterRole: BigInt!
+  domain: GameManager!
+  entityAddress: String! # address
+  postedBy: String! # address
+  content: RawMetadata!
+  contentSchema: Int!
+  postDecorator: Int!
+  timestamp: Int!
+}
+
+type FeedCard {
+  id: ID!
+  timestamp: BigInt
+  content: String!
+  sender: String!
+  tag: String!
+  subjectMetadataPointer: String!
+  subjectId: ID!
+  objectId: ID
+  subject: FeedItemEntity!
+  object: FeedItemEntity
+  embed: FeedItemEmbed
+  details: String
+}
+
+type FeedItemEntity {
+  id: ID!
+  name: String!
+  entityType: String!
+  feedCardsAsSubject: [FeedCard!]! @derivedFrom(field: "subject")
+  feedCardsAsObject: [FeedCard!]! @derivedFrom(field: "object")
+}
+
+type FeedItemEmbed {
+  id: ID!
+  key: String
+  pointer: String
+  protocol: BigInt
+  content: String
 }

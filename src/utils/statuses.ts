@@ -8,3 +8,16 @@ export enum GameStatus {
   Active,
   Completed,
 }
+
+export enum UpdateScope {
+  Game,
+  Ship,
+}
+
+export enum PostDecorator {
+  Update,
+}
+
+export enum ContentSchema {
+  BasicUpdate, // { text: string }
+}

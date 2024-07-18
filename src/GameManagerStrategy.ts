@@ -1,10 +1,10 @@
+import { GameManagerStrategyContract } from 'generated';
 import {
-  GameManagerStrategyContract,
-  gameManagerEntity,
-  gameRoundEntity,
-  gameRoundLoaderConfig,
-} from 'generated';
-import { GameStatus } from './utils/statuses';
+  ContentSchema,
+  GameStatus,
+  PostDecorator,
+  UpdateScope,
+} from './utils/statuses';
 import { addTransaction } from './utils/sync';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
@@ -339,4 +339,28 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
 );
 
 GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
-GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {});
+GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
+  if (event.params.tag.startsWith('0xb02b7f97')) {
+    context.RawMetadata.set({
+      id: event.params.tag,
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+
+    context.Update.set({
+      id: event.transactionHash,
+      tag: event.params.tag,
+      scope: UpdateScope.Game,
+      domain_id: event.srcAddress,
+      posterRole: event.params.role,
+      entityAddress: event.srcAddress,
+      content_id: event.params.content[1],
+      postDecorator: PostDecorator.Update,
+      postedBy: event.txOrigin || 'Unknown',
+      contentSchema: ContentSchema.BasicUpdate,
+      timestamp: event.blockTimestamp,
+    });
+
+    addTransaction(event, context.Transaction.set);
+  }
+});
