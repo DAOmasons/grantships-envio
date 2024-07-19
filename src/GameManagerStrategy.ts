@@ -4,7 +4,7 @@ import {
   GameStatus,
   PostDecorator,
   UpdateScope,
-} from './utils/statuses';
+} from './utils/constants';
 import { addTransaction } from './utils/sync';
 import { addFeedCard, feedCardId } from './utils/feed';
 import { CHAIN } from './utils/network';

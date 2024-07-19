@@ -1,5 +1,5 @@
 import { RegistryContract } from 'generated';
-import { GameStatus } from './utils/statuses';
+import { GameStatus } from './utils/constants';
 import { addTransaction } from './utils/sync';
 
 RegistryContract.ProfileCreated.loader(({ event }) => {});
