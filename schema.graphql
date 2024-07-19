@@ -174,25 +174,26 @@ type Update {
 
 type FeedCard {
   id: ID!
-  timestamp: BigInt
-  content: String!
-  sender: String!
+  timestamp: Int!
+  message: String
+  content: RawMetadata
+  sender: String
   tag: String!
   subjectMetadataPointer: String!
-  subjectId: ID!
-  objectId: ID
   subject: FeedItemEntity!
   object: FeedItemEntity
   embed: FeedItemEmbed
-  details: String
+  domain: GameManager
+  internalLink: String
+  externalLink: String
 }
 
 type FeedItemEntity {
   id: ID!
   name: String!
   entityType: String!
-  feedCardsAsSubject: [FeedCard!]! @derivedFrom(field: "subject")
-  feedCardsAsObject: [FeedCard!]! @derivedFrom(field: "object")
+  # feedCardsAsSubject: [FeedCard!]! @derivedFrom(field: "subject")
+  # feedCardsAsObject: [FeedCard!]! @derivedFrom(field: "object")
 }
 
 type FeedItemEmbed {
@@ -201,4 +202,175 @@ type FeedItemEmbed {
   pointer: String
   protocol: BigInt
   content: String
+}
+
+############ VOTING SCHEMA ################
+
+type FactoryEventsSummary {
+  id: ID!
+  address: String!
+  admins: [String!]!
+  contestTemplateCount: BigInt!
+  moduleTemplateCount: BigInt!
+  moduleCloneCount: BigInt!
+  contestBuiltCount: BigInt!
+  ContestCloneCount: BigInt!
+}
+
+type ContestTemplate {
+  id: ID!
+  contestVersion: String!
+  contestAddress: String!
+  mdProtocol: BigInt!
+  mdPointer: String!
+  active: Boolean!
+}
+
+type ModuleTemplate {
+  id: ID!
+  moduleName: String!
+  templateAddress: String!
+  mdProtocol: BigInt!
+  mdPointer: String!
+  active: Boolean!
+}
+
+type StemModule {
+  id: ID!
+  moduleAddress: String!
+  contestAddress: String
+  contest: Contest
+  moduleName: String!
+  moduleTemplate: ModuleTemplate!
+  filterTag: String!
+}
+
+type ContestClone {
+  id: ID!
+  contestAddress: String!
+  contestVersion: String!
+  filterTag: String!
+}
+
+type Contest {
+  id: ID!
+  contestAddress: String!
+  contestVersion: String!
+  filterTag: String!
+  contestStatus: BigInt!
+  votesModule: StemModule!
+  pointsModule: StemModule!
+  executionModule: StemModule!
+  choicesModule: StemModule!
+  isContinuous: Boolean!
+  isRetractable: Boolean!
+}
+
+type LocalLog {
+  id: ID!
+  message: String
+}
+
+# Grant Ships Schema
+
+type HALParams {
+  id: ID!
+  hatId: BigInt!
+  hatsAddress: String!
+}
+
+type TVParams {
+  id: ID!
+  voteDuration: BigInt!
+}
+
+type ERCPointParams {
+  id: ID!
+  voteTokenAddress: String!
+  votingCheckpoint: BigInt!
+}
+
+type SBTBalParams {
+  id: ID!
+  voteTokenAddress: String!
+}
+
+type ShipChoice {
+  id: ID!
+  contest: GrantShipsVoting!
+  mdProtocol: BigInt!
+  mdPointer: String!
+  choiceData: Bytes!
+  active: Boolean!
+  voteTally: BigInt!
+  votes: [ShipVote!]! @derivedFrom(field: "choice")
+}
+
+type ShipVote {
+  id: ID!
+  choice: ShipChoice!
+  voter: GSVoter!
+  amount: BigInt!
+  contest: GrantShipsVoting!
+  mdPointer: String!
+  mdProtocol: BigInt!
+  isRetractVote: Boolean!
+}
+
+type GSVoter {
+  id: ID!
+  address: String!
+  votes: [ShipVote!]! @derivedFrom(field: "voter")
+}
+
+type GrantShipsVoting {
+  id: ID!
+  contest: Contest!
+  hatId: BigInt!
+  hatsAddress: String!
+  voteTokenAddress: String!
+  votingCheckpoint: BigInt!
+  voteDuration: BigInt!
+  startTime: BigInt
+  endTime: BigInt
+  isVotingActive: Boolean!
+  isSBTVoting: Boolean!
+  totalVotes: BigInt!
+  choices: [ShipChoice!]! @derivedFrom(field: "contest")
+  votes: [ShipVote!]! @derivedFrom(field: "contest")
+}
+
+type EnvioTX {
+  id: ID!
+  blockNumber: BigInt!
+  srcAddress: String!
+  txOrigin: String
+  txHash: Bytes!
+}
+
+type Record {
+  id: ID!
+  tag: String!
+  nonce: Bytes!
+  hatId: BigInt!
+  mdProtocol: BigInt!
+  mdPointer: String!
+  hatsPoster: HatsPoster!
+}
+
+type EventPost {
+  id: ID!
+  tag: String!
+  hatId: BigInt!
+  mdProtocol: BigInt!
+  mdPointer: String!
+  hatsPoster: HatsPoster!
+}
+
+type HatsPoster {
+  id: ID!
+  hatIds: [BigInt!]!
+  hatsAddress: String!
+  record: [Record!]! @derivedFrom(field: "hatsPoster")
+  eventPosts: [EventPost!]! @derivedFrom(field: "hatsPoster")
 }

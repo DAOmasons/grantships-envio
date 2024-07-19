@@ -6,6 +6,8 @@ import {
   UpdateScope,
 } from './utils/statuses';
 import { addTransaction } from './utils/sync';
+import { addFeedCard, feedCardId } from './utils/feed';
+import { CHAIN } from './utils/network';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
 
@@ -17,6 +19,24 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       gameFacilitatorId: event.params.gameFacilitatorId,
     });
     addTransaction(event, context.Transaction.set);
+
+    addFeedCard({
+      message: `Facilitator Crew Initialized the Game Manager Contract`,
+      tag: 'gm-initialized',
+      domain: event.srcAddress,
+      event,
+      subject: {
+        id: event.srcAddress,
+        type: 'facilitators',
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      setCard: context.FeedCard.set,
+      setEntity: context.FeedItemEntity.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/tx/${event.transactionIndex}`,
+    });
   }
 );
 
