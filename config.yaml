@@ -30,6 +30,9 @@ contracts:
     - event: Allocated(address recipientId, uint256 amount,address tokenAddress, address sender)
     - event: Distributed(address recipientId, address shipAddress, uint256 grantAmount, address sender)
     - event: GameRoundTimesCreated(uint256 gameRoundIndex,uint256 startTime,uint256 endTime)
+  - name: GrantShipFactory
+    handler: src/GrantShipFactory.ts
+    events: 
     # Voting
   - name: HatsPoster
     handler: src/HatsPoster.ts
