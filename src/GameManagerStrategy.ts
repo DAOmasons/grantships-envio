@@ -7,7 +7,7 @@ import {
   UpdateScope,
 } from './utils/constants';
 import { addTransaction } from './utils/sync';
-import { addFeedCard, feedCardId } from './utils/feed';
+import { addFeedCard } from './utils/feed';
 import { CHAIN } from './utils/network';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});

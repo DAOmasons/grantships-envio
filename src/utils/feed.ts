@@ -34,7 +34,7 @@ export const addFeedCard = ({
   subject,
   embed,
   object,
-  content,
+  richTextContent,
   message,
   setEntity,
   setCard,
@@ -50,7 +50,7 @@ export const addFeedCard = ({
   subject: Subject;
   object?: Object;
   embed?: Embed;
-  content?: {
+  richTextContent?: {
     protocol: bigint;
     pointer: string;
   };
@@ -88,11 +88,11 @@ export const addFeedCard = ({
     });
   }
 
-  if (content) {
+  if (richTextContent) {
     setMetadata({
-      id: content.pointer,
-      protocol: content.protocol,
-      pointer: content.pointer,
+      id: richTextContent.pointer,
+      protocol: richTextContent.protocol,
+      pointer: richTextContent.pointer,
     });
   }
 
@@ -100,7 +100,7 @@ export const addFeedCard = ({
     id: cardId,
     timestamp: event.blockTimestamp,
     message,
-    content_id: content?.pointer || undefined,
+    richTextContent_id: richTextContent?.pointer || undefined,
     sender: event.txOrigin,
     tag,
     subject_id: subject.id,

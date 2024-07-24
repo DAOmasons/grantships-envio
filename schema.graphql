@@ -179,7 +179,7 @@ type FeedCard {
   id: ID!
   timestamp: Int!
   message: String
-  content: RawMetadata
+  richTextContent: RawMetadata
   sender: String
   tag: String!
   subjectMetadataPointer: String!
