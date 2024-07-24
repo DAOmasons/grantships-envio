@@ -162,14 +162,17 @@ type Update {
   id: ID!
   scope: Int!
   tag: String!
-  posterRole: BigInt!
-  domain: GameManager!
+  playerType: Int!
+  domain: GameManager
   entityAddress: String! # address
-  postedBy: String! # address
+  entityMetadata: RawMetadata
+  postedBy: String # address
   content: RawMetadata!
   contentSchema: Int!
-  postDecorator: Int!
+  postDecorator: Int
   timestamp: Int!
+  postBlockNumber: Int!
+  chainId: Int!
 }
 
 type FeedCard {
@@ -191,7 +194,7 @@ type FeedCard {
 type FeedItemEntity {
   id: ID!
   name: String!
-  entityType: String!
+  playerType: Int!
   # feedCardsAsSubject: [FeedCard!]! @derivedFrom(field: "subject")
   # feedCardsAsObject: [FeedCard!]! @derivedFrom(field: "object")
 }

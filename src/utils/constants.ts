@@ -12,6 +12,13 @@ export enum GameStatus {
 export enum UpdateScope {
   Game,
   Ship,
+  Project,
+}
+
+export enum Player {
+  Project,
+  Ship,
+  GameFacilitator,
 }
 
 export enum PostDecorator {
@@ -20,6 +27,7 @@ export enum PostDecorator {
 
 export enum ContentSchema {
   BasicUpdate, // { text: string }
+  RichText, // { type: 'doc' content: Array<ContentNode> }
 }
 
 export enum Module {

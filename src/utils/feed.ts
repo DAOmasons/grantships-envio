@@ -5,10 +5,11 @@ import {
   feedItemEntityEntity,
   rawMetadataEntity,
 } from 'generated';
+import { Player } from './constants';
 
 type Object = {
   id: string;
-  type: string;
+  playerType: Player;
   name: string;
 };
 
@@ -66,7 +67,7 @@ export const addFeedCard = ({
   setEntity({
     id: subject.id,
     name: subject.name,
-    entityType: subject.type,
+    playerType: subject.playerType,
   });
 
   if (embed) {
@@ -83,7 +84,7 @@ export const addFeedCard = ({
     setEntity({
       id: object.id,
       name: object.name,
-      entityType: object.type,
+      playerType: object.playerType,
     });
   }
 

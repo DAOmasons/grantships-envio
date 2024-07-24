@@ -30,10 +30,10 @@ contracts:
     - event: Allocated(address recipientId, uint256 amount,address tokenAddress, address sender)
     - event: Distributed(address recipientId, address shipAddress, uint256 grantAmount, address sender)
     - event: GameRoundTimesCreated(uint256 gameRoundIndex,uint256 startTime,uint256 endTime)
-  - name: GrantShipFactory
-    handler: src/GrantShipFactory.ts
+  - name: AlloPoster
+    handler: src/AlloPoster.ts
     events: 
-    # Voting
+    - event: PostEvent(string tag, bytes32 profileId, (uint256, string), address anchor)
   - name: HatsPoster
     handler: src/HatsPoster.ts
     events:
@@ -59,7 +59,7 @@ contracts:
     - event: Initialized(address contest, address hatsAddress, uint256 hatId)
     - event: Registered(bytes32 choiceId, ((uint256, string), bytes, bool), address contest)
     - event: Removed(bytes32 choiceId, address contest)
-      isAsync: true
+      isAsync: true    
   - name: ERC20VotesPoints
     handler: src/ERC20VotesPoints.ts
     events:
@@ -112,6 +112,8 @@ networks:
     address:  
   - name: HatsPoster
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
+  - name: AlloPoster
+    address: 0x168752edda2ca12e361b0c6a60d958c25818ec9b
 - id: 42161 # Arbitrum One
   start_block: 195499276
   end_block: null
@@ -138,5 +140,8 @@ networks:
     address:  
   - name: HatsPoster
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
+  - name: AlloPoster
+    address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
+    
 
   

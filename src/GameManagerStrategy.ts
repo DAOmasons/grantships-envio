@@ -3,6 +3,7 @@ import {
   ContentSchema,
   GameStatus,
   PostDecorator,
+  Player,
   UpdateScope,
 } from './utils/constants';
 import { addTransaction } from './utils/sync';
@@ -27,7 +28,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       event,
       subject: {
         id: event.srcAddress,
-        type: 'facilitators',
+        playerType: Player.GameFacilitator,
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
@@ -372,13 +373,16 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       tag: event.params.tag,
       scope: UpdateScope.Game,
       domain_id: event.srcAddress,
-      posterRole: event.params.role,
+      playerType: Player.GameFacilitator,
       entityAddress: event.srcAddress,
       content_id: event.params.content[1],
       postDecorator: PostDecorator.Update,
       postedBy: event.txOrigin || 'Unknown',
       contentSchema: ContentSchema.BasicUpdate,
       timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      entityMetadata_id: undefined,
     });
 
     addTransaction(event, context.Transaction.set);
