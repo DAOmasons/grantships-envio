@@ -16,6 +16,10 @@ contracts:
     - event: GameManagerDeployedWithPool(address gameManagerAddress, bytes32 profileId, uint256 poolId, string templateName, address tokenAddress, bytes initData, (uint256,string) poolMetadata, (uint256,string) profileMetadata)
     - event: RootAccountSwitched(address newRootAccount)
     - event: TemplateCreated(string name, address templateAddress)
+  - name: GrantShipFactory
+    handler: src/GrantShipFactory.ts
+    events: 
+    - event: ShipCreated(address strategyAddress, address anchorAddress, address sender)  
   - name: GameManagerStrategy
     handler: src/GameManagerStrategy.ts
     events:
@@ -30,6 +34,10 @@ contracts:
     - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
     - event: GameRoundTimesCreated(uint256 indexed gameRoundIndex, uint256 startTime, uint256 endTime)
+  - name: GrantShipStrategy
+    handler: src/GrantShipStrategy.ts
+    events:
+    - event: PoolFunded(uint256 poolId, uint256 amount, uint256 amountPercentage)
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 
@@ -91,13 +99,15 @@ networks:
   contracts:
   - name: Registry
     abi_file_path: abis/Registry.json
-    address: 
-    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+    address: 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
   - name: GameManagerFactory
-    address: 
-    - 0x103f8273b0ea01ffd5a457ed51fdaca81e971378
+    address: 0x103f8273b0ea01ffd5a457ed51fdaca81e971378
+  - name: GrantShipFactory
+    address: 0x1F8cbC9d98E63575F8eE4C21a7BA68A34f66F280
   - name: GameManagerStrategy
-    address:   
+    address:
+  - name: GrantShipStrategy
+    address:  
   - name: FastFactory
     address: 0x2bABC10b90c67399F820433358fEb85fbB24f22f
   - name: HatsAllowList
@@ -119,13 +129,15 @@ networks:
   end_block: null
   contracts:
   - name: Registry
-    address: 
-    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+    address: 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
   - name: GameManagerFactory
-    address:
-    - 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
+    address: 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
+  - name: GrantShipFactory
+    address: 0xe3c270Bf363f3F55e8Fd488c2728227AeF436243
   - name: GameManagerStrategy
     address:
+  - name: GrantShipStrategy
+    address:  
   - name: FastFactory
     address: 0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70
   - name: HatsAllowList

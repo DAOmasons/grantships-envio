@@ -95,6 +95,13 @@ type Project @entity {
   totalAmountReceived: BigInt!
 }
 
+type ShipContext {
+  id: String!
+  shipAddress: String!
+  grantShip: GrantShip!
+  gameManager: GameManager!
+}
+
 type GrantShip @entity {
   # Registry => ProfileCreated
   id: ID!
