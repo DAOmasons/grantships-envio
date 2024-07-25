@@ -264,14 +264,14 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
     ...ship,
     isDistributed: true,
     status: GameStatus.Active,
-    totalRoundAmount: event.params.grantAmount,
+    totalRoundAmount: event.params.amount,
   });
 
   context.GameRound.set({
     ...currentRound,
     gameStatus: GameStatus.Funded,
     totalDistributedAmount:
-      currentRound.totalDistributedAmount + event.params.grantAmount,
+      currentRound.totalDistributedAmount + event.params.amount,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -324,40 +324,40 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
   }
 });
 
-GameManagerStrategyContract.GameRoundTimesCreated.loader(
-  ({ event, context }) => {
-    context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
-  }
-);
+// GameManagerStrategyContract.GameRoundTimesCreated.loader(
+//   ({ event, context }) => {
+//     context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
+//   }
+// );
 
-GameManagerStrategyContract.GameRoundTimesCreated.handler(
-  ({ event, context }) => {
-    const gameManager = context.GameManager.get(event.srcAddress);
+// GameManagerStrategyContract.GameRoundTimesCreated.handler(
+//   ({ event, context }) => {
+//     const gameManager = context.GameManager.get(event.srcAddress);
 
-    if (!gameManager) {
-      context.log.error(
-        `GameManager not found for address ${event.srcAddress}`
-      );
-      return;
-    }
+//     if (!gameManager) {
+//       context.log.error(
+//         `GameManager not found for address ${event.srcAddress}`
+//       );
+//       return;
+//     }
 
-    const currentRound = context.GameManager.getCurrentRound(gameManager);
+//     const currentRound = context.GameManager.getCurrentRound(gameManager);
 
-    if (!currentRound) {
-      context.log.error(
-        `Current round not found for GameManager ${gameManager.id}`
-      );
-      return;
-    }
+//     if (!currentRound) {
+//       context.log.error(
+//         `Current round not found for GameManager ${gameManager.id}`
+//       );
+//       return;
+//     }
 
-    context.GameRound.set({
-      ...currentRound,
-      startTime: event.params.startTime,
-      endTime: event.params.endTime,
-    });
-    addTransaction(event, context.Transaction.set);
-  }
-);
+//     context.GameRound.set({
+//       ...currentRound,
+//       startTime: event.params.startTime,
+//       endTime: event.params.endTime,
+//     });
+//     addTransaction(event, context.Transaction.set);
+//   }
+// );
 
 GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
 GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
