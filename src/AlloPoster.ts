@@ -1,10 +1,5 @@
 import { AlloPosterContract } from 'generated';
-import {
-  ContentSchema,
-  PostDecorator,
-  Player,
-  UpdateScope,
-} from './utils/constants';
+import { ContentSchema, Player, UpdateScope } from './utils/constants';
 import { addTransaction } from './utils/sync';
 import { addFeedCard } from './utils/feed';
 

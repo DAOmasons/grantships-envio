@@ -19,7 +19,7 @@ contracts:
   - name: GameManagerStrategy
     handler: src/GameManagerStrategy.ts
     events:
-    - event: Registered(address anchorAddress, bytes applicationData, address sender)
+    - event: Registered(address indexed anchorAddress, bytes applicationData, address sender)
     - event: GameManagerInitialized(uint256 gameFacilitatorId,address hatsAddress,address rootAccount,address token,uint256 poolId)
     - event: RoundCreated(uint256 gameIndex,uint256 totalRoundAmount)
     - event: ShipLaunched(address shipAddress,uint256 shipPoolId,address recipientId,string shipName,(uint256,string) metadata)
@@ -27,8 +27,8 @@ contracts:
     - event: RecipientAccepted(address recipientAddress,(uint256,string) reason)
     - event: GameActive(bool active,uint256 gameIndex)
     - event: UpdatePosted(string tag,uint256 role,address recipientId,(uint256,string) content)
-    - event: Allocated(address recipientId, uint256 amount,address tokenAddress, address sender)
-    - event: Distributed(address recipientId, address shipAddress, uint256 grantAmount, address sender)
+    - event: Allocated(address indexed recipientId, uint256 amount,address tokenAddress, address sender)
+    - event: Distributed(address indexed recipientId, address shipAddress, uint256 grantAmount, address sender)
     - event: GameRoundTimesCreated(uint256 gameRoundIndex,uint256 startTime,uint256 endTime)
   - name: AlloPoster
     handler: src/AlloPoster.ts
