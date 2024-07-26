@@ -6,7 +6,13 @@ import {
   GrantShipStrategyContract_UpdatePostedEvent_handlerContext,
   eventLog,
 } from 'generated';
-import { GameStatus, GrantStatus } from './utils/constants';
+import {
+  ContentSchema,
+  GameStatus,
+  GrantStatus,
+  Player,
+  UpdateScope,
+} from './utils/constants';
 import {
   _applicationId,
   _grantId,
@@ -292,17 +298,55 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
   const currentMilestones = grant
     ? context.Grant.getCurrentMilestones(grant)
     : null;
+  const ship = grant ? context.Grant.getShip(grant) : null;
+  const project = grant ? context.Grant.getProject(grant) : null;
 
-  if (!grant || !currentMilestones) {
+  if (!grant || !currentMilestones || !ship || !project) {
     context.log.error(
-      `Grant or Current Milestones not found: Grant Id ${grantId}`
+      `Grant or Current Milestones or Ship or Project not found: Grant Id ${grantId}`
     );
     return;
   }
 
-  //   context.MilestoneSet.set({
-  //     ...currentMilestones,
-  //     status: event.params.status,
+  const isApproved = event.params.status === 2n;
+
+  context.RawMetadata.set({
+    id: event.params.reason[1],
+    protocol: event.params.reason[0],
+    pointer: event.params.reason[1],
+  });
+
+  context.MilestoneSet.set({
+    ...currentMilestones,
+    status: isApproved ? GameStatus.Accepted : GameStatus.Rejected,
+  });
+
+  context.Grant.set({
+    ...grant,
+    lastUpdated: event.blockTimestamp,
+    status: isApproved
+      ? GrantStatus.MilestonesApproved
+      : GrantStatus.MilestonesRejected,
+  });
+
+  context.Update.set({
+    id: `grant-update-${event.transactionHash}`,
+    scope: UpdateScope.Grant,
+    tag: 'grant/milestones/',
+    playerType: Player.Ship,
+    domain_id: grant.gameManager_id,
+    entityAddress: ship.id,
+    entityMetadata_id: ship.profileMetadata_id,
+    postedBy: event.txOrigin,
+    message: `${ship.name} has ${isApproved ? 'approved' : 'not approved'} ${project.name}'s Milestones Draft`,
+    content_id: event.params.reason[1],
+    contentSchema: ContentSchema.BasicUpdate,
+    postDecorator: undefined,
+    timestamp: event.blockTimestamp,
+    postBlockNumber: event.blockNumber,
+    chainId: event.chainId,
+    hostEntityId: grant.id,
+  });
 });
 
 GrantShipStrategyContract.RecipientStatusChanged.loader(
