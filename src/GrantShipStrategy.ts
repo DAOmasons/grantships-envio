@@ -6,11 +6,7 @@ import {
   GrantShipStrategyContract_UpdatePostedEvent_handlerContext,
   eventLog,
 } from 'generated';
-import {
-  FacilitatorApprovalStatus,
-  GrantStatus,
-  MilestoneStatus,
-} from './utils/constants';
+import { GameStatus, GrantStatus } from './utils/constants';
 import {
   _applicationId,
   _grantId,
@@ -160,7 +156,7 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     status: GrantStatus.ApplicationSubmitted,
     lastUpdated: event.blockTimestamp,
     amount: event.params.grantAmount,
-    facilitatorApprovalStatus: FacilitatorApprovalStatus.None,
+    facilitatorApprovalStatus: GameStatus.None,
     hasPendingMilestones: false,
     hasRejectedMilestones: false,
     allApproved: false,
@@ -259,7 +255,7 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
       percentage: milestone[0],
       metadata_id: metadata[1],
       milestoneSet_id: milestoneSetId,
-      status: MilestoneStatus.None,
+      status: GameStatus.None,
       grant_id: grantId,
     });
   }
@@ -279,12 +275,35 @@ GrantShipStrategyContract.MilestonesReviewed.loader(({ event, context }) => {
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
     }),
-    { loadCurrentMilestones: {}, loadProject: {}, loadShip: {} }
+    {
+      loadCurrentMilestones: {},
+      loadProject: {},
+      loadShip: {},
+      loadGameManager: {},
+    }
   );
 });
-GrantShipStrategyContract.MilestonesReviewed.handler(
-  ({ event, context }) => {}
-);
+GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
+  const grant = context.Grant.get(grantId);
+  const currentMilestones = grant
+    ? context.Grant.getCurrentMilestones(grant)
+    : null;
+
+  if (!grant || !currentMilestones) {
+    context.log.error(
+      `Grant or Current Milestones not found: Grant Id ${grantId}`
+    );
+    return;
+  }
+
+  //   context.MilestoneSet.set({
+  //     ...currentMilestones,
+  //     status: event.params.status,
+});
 
 GrantShipStrategyContract.RecipientStatusChanged.loader(
   ({ event, context }) => {}

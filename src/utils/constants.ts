@@ -64,20 +64,6 @@ export enum GrantStatus {
   Completed,
 }
 
-export enum FacilitatorApprovalStatus {
-  None,
-  Pending,
-  Approved,
-  Rejected,
-}
-
-export enum MilestoneStatus {
-  None,
-  Submitted,
-  Rejected,
-  Approved,
-}
-
 // Took out
 // facilitator approve
 // facilitator reject
