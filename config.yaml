@@ -38,6 +38,18 @@ contracts:
     handler: src/GrantShipStrategy.ts
     events:
     - event: PoolFunded(uint256 poolId, uint256 amount, uint256 amountPercentage)
+    - event: GrantShipInitialized(uint256 poolId, address gameManager, uint256 operatorHatId, uint256 facilitatorHatId, address registryAnchor)
+    - event: RecipientRegistered(address recipientId, address receivingAddress, uint256 grantAmount, (uint256,string) metadata, uint256 grantIndex)
+    - event: RecipientStatusChanged(address recipientId, uint8 status, (uint256,string) reason)
+    - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256,string)[] milestones)
+    - event: MilestoneSubmitted(address recipientId, uint256 milestoneId, (uint256,string) metadata)
+    - event: MilestoneStatusChanged(address recipientId, uint256 milestoneId, uint8 status)
+    - event: MilestoneRejected(address recipientId, uint256 milestoneId, (uint256,string) reason)
+    - event: MilestonesReviewed(address recipientId, uint8 status, (uint256,string) reason)
+    - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
+    - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
+    - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
+
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 

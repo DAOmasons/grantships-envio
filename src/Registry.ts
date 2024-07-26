@@ -71,7 +71,6 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       applicationSubmittedTime: undefined,
       isAwaitingApproval: undefined,
       hasSubmittedApplication: undefined,
-
       isApproved: undefined,
       approvedTime: undefined,
       isRejected: undefined,
@@ -84,6 +83,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       poolActive: undefined,
       isAllocated: undefined,
       isDistributed: undefined,
+      beaconMessage_id: undefined,
     });
 
     context.ProfileIdToAnchor.set({

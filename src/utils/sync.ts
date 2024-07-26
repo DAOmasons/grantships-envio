@@ -9,5 +9,6 @@ export const addTransaction = (
     blockNumber: BigInt(event.blockNumber),
     srcAddress: event.srcAddress,
     txHash: event.transactionHash,
+    timestamp: event.blockTimestamp,
   });
 };

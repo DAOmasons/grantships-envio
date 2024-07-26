@@ -77,7 +77,7 @@ type ProfileIdToAnchor {
 }
 
 type Project @entity {
-  id: String!
+  id: ID!
   chainId: Int!
   profileId: String! # bytes32
   status: Int! # uint8
@@ -96,7 +96,7 @@ type Project @entity {
 }
 
 type ShipContext {
-  id: String!
+  id: ID!
   shipAddress: String!
   grantShip: GrantShip!
   gameManager: GameManager!
@@ -141,7 +141,7 @@ type GrantShip @entity {
   applicationReviewReason: RawMetadata
   # # Game Manager => ShipLaunched
   poolId: BigInt
-  hatId: String
+  hatId: BigInt
   shipContractAddress: String # address
   shipLaunched: Boolean
   poolActive: Boolean
@@ -149,13 +149,52 @@ type GrantShip @entity {
   isAllocated: Boolean
   # # Game Manager => Distributed
   isDistributed: Boolean
+  beaconMessage: RawMetadata
 }
 
 type Grant {
   id: ID!
   ship: GrantShip!
   project: Project!
-  # project: Project!
+  gameManager: GameManager!
+  status: Int!
+  lastUpdated: Int!
+  milestonesStatus: Int!
+  amount: BigInt
+  facilitatorApproved: Boolean
+  milestonesApproved: Boolean
+  applicationApproved: Boolean
+  isRequestingFacilitator: Boolean
+  milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
+  approvedMilestones: MilestoneSet
+  applications: [Application!]! @derivedFrom(field: "grant")
+}
+
+type Application {
+  id: ID!
+  grant: Grant!
+  metadata: RawMetadata!
+  amount: BigInt!
+  receivingAddress: String!
+  status: Int!
+  timestamp: Int!
+}
+
+type MilestoneSet {
+  id: ID!
+  grant: Grant!
+  timestamp: Int!
+  milestones: [Milestone!]! @derivedFrom(field: "milestoneSet")
+}
+
+type Milestone {
+  id: ID!
+  percentage: BigInt!
+  amount: BigInt!
+  metadata: RawMetadata!
+  milestoneSet: MilestoneSet!
+  status: Int!
+  grant: Grant!
 }
 
 type Transaction {
@@ -163,6 +202,7 @@ type Transaction {
   blockNumber: BigInt!
   srcAddress: String!
   txHash: String!
+  timestamp: Int!
 }
 
 type Update {
