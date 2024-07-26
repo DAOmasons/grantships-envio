@@ -141,7 +141,7 @@ type GrantShip @entity {
   applicationReviewReason: RawMetadata
   # # Game Manager => ShipLaunched
   poolId: BigInt
-  hatId: BigInt
+  hatId: String
   shipContractAddress: String # address
   shipLaunched: Boolean
   poolActive: Boolean
@@ -159,15 +159,17 @@ type Grant {
   gameManager: GameManager!
   status: Int!
   lastUpdated: Int!
-  milestonesStatus: Int!
   amount: BigInt
-  facilitatorApproved: Boolean
-  milestonesApproved: Boolean
-  applicationApproved: Boolean
-  isRequestingFacilitator: Boolean
+  facilitatorApprovalStatus: Int!
+  hasPendingMilestones: Boolean!
+  hasRejectedMilestones: Boolean!
+  allApproved: Boolean!
+  grantCompleted: Boolean!
+  applicationApproved: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
   approvedMilestones: MilestoneSet
   applications: [Application!]! @derivedFrom(field: "grant")
+  approvedApplication: Application
 }
 
 type Application {

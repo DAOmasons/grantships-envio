@@ -50,3 +50,30 @@ export enum ContestStatus {
   Finalized,
   Executed,
 }
+
+export enum GrantStatus {
+  None,
+  ApplicationSubmitted,
+  ApplicationRejected,
+  ApplicationApproved,
+  MilestonesSubmitted,
+  MilestonesRejected,
+  MilestonesApproved,
+  Building,
+  Completed,
+}
+
+export enum FacilitatorApprovalStatus {
+  None,
+  Pending,
+  Approved,
+  Rejected,
+}
+
+// Took out
+// facilitator approve
+// facilitator reject
+// //
+// MilestoneSubmitted,
+//   MilestoneRejected,
+//   MilestoneApproved,
