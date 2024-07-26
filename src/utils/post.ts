@@ -5,8 +5,9 @@ import {
   grantEntity,
   grantShipEntity,
 } from 'generated';
-import { _grantId } from './id';
-import { ContentSchema, Player, UpdateScope } from './constants';
+import { _applicationId, _grantId } from './id';
+import { ContentSchema, GrantStatus, Player, UpdateScope } from './constants';
+import { addTransaction } from './sync';
 
 const invokeFacilitatorAction = ({
   event,
@@ -16,7 +17,9 @@ const invokeFacilitatorAction = ({
   event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
   context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
   contractTag: string;
-}) => {};
+}) => {
+  context.log.error(`Action not found: In Facilitator Action`);
+};
 
 const invokeProjectAction = ({
   event,
@@ -70,6 +73,8 @@ const invokeProjectAction = ({
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
+  } else {
+    context.log.error(`Action not found: ${action}`);
   }
 };
 
@@ -97,13 +102,13 @@ const invokeShipAction = ({
       ...ship,
       beaconMessage_id: event.params.content[1],
     });
+    addTransaction(event, context.Transaction.set);
   } else if (action === 'GRANT_UPDATE') {
     const grantId = _grantId({
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
     });
     const grant = context.Grant.get(grantId);
-
     if (!grant) {
       context.log.error(`Grant not found: ${event.params.recipientId}`);
       return;
@@ -133,6 +138,82 @@ const invokeShipAction = ({
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
+    addTransaction(event, context.Transaction.set);
+  } else if (action === 'SHIP_REVIEW') {
+    const [, , decision] = event.params.content[1].split(':');
+    const grantId = _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    });
+    const grant = context.Grant.get(grantId);
+    if (!grant) {
+      context.log.error(`Grant not found: ${event.params.recipientId}`);
+      return;
+    }
+
+    const applicationId = _applicationId({
+      projectId: grant.project_id,
+      shipSrc: event.srcAddress,
+      index: grant.applicationIndex,
+    });
+
+    const application = context.Application.get(applicationId);
+
+    if (!application) {
+      context.log.error(`Application not found: ${applicationId}`);
+      return;
+    }
+
+    const isApproved = decision === 'APPROVED';
+    const isRejected = decision === 'REJECTED';
+
+    if (!isApproved && !isRejected) {
+      context.log.error(`Invalid decision: ${decision}`);
+    }
+
+    context.RawMetadata.set({
+      id: event.params.content[1],
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+
+    context.Grant.set({
+      ...grant,
+      status: isApproved
+        ? GrantStatus.ApplicationApproved
+        : GrantStatus.ApplicationRejected,
+      lastUpdated: event.blockTimestamp,
+    });
+
+    context.Application.set({
+      ...application,
+      status: isApproved
+        ? GrantStatus.ApplicationApproved
+        : GrantStatus.ApplicationRejected,
+    });
+
+    context.Update.set({
+      id: `grant-update-${event.transactionHash}`,
+      scope: UpdateScope.Grant,
+      tag: 'grant/approve/application',
+      playerType: Player.Ship,
+      domain_id: grant.gameManager_id,
+      entityAddress: ship.id,
+      entityMetadata_id: ship.profileMetadata_id,
+      postedBy: event.txOrigin,
+      message: isApproved
+        ? `${ship.name} has approved the Application`
+        : `${ship.name} has not approved the Application`,
+      content_id: event.params.content[1],
+      contentSchema: ContentSchema.BasicUpdate,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: grant.id,
+    });
+
+    addTransaction(event, context.Transaction.set);
   } else {
     context.log.error(`Action not found: ${action}`);
   }
