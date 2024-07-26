@@ -53,6 +53,7 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
           timestamp: event.blockTimestamp,
           postBlockNumber: event.blockNumber,
           chainId: event.chainId,
+          hostEntityId: project.id,
         });
 
         addTransaction(event, context.Transaction.set);

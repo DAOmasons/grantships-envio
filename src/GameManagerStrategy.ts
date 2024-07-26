@@ -383,6 +383,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       postBlockNumber: event.blockNumber,
       chainId: event.chainId,
       entityMetadata_id: undefined,
+      hostEntityId: event.srcAddress,
     });
 
     addTransaction(event, context.Transaction.set);

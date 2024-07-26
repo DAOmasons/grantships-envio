@@ -171,7 +171,7 @@ type Update {
   tag: String!
   playerType: Int!
   domain: GameManager
-  entityAddress: String! # address
+  entityAddress: String!
   entityMetadata: RawMetadata
   postedBy: String # address
   content: RawMetadata!
@@ -180,6 +180,7 @@ type Update {
   timestamp: Int!
   postBlockNumber: Int!
   chainId: Int!
+  hostEntityId: String!
 }
 
 type FeedCard {
