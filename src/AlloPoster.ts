@@ -47,6 +47,7 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
           entityAddress: project.id,
           entityMetadata_id: project.metadata_id,
           postedBy: event.txOrigin,
+          message: undefined,
           content_id: event.params._2[1],
           contentSchema: ContentSchema.RichText,
           postDecorator: undefined,

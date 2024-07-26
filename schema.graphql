@@ -216,6 +216,7 @@ type Update {
   entityAddress: String!
   entityMetadata: RawMetadata
   postedBy: String # address
+  message: String
   content: RawMetadata!
   contentSchema: Int!
   postDecorator: Int

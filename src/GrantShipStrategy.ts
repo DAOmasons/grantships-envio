@@ -1,5 +1,14 @@
-import { GrantShipStrategyContract } from 'generated';
+import {
+  GrantShipStrategyContract,
+  GrantShipStrategyContract_UpdatePostedEvent_applicationEntityHandlerContext,
+  GrantShipStrategyContract_UpdatePostedEvent_eventArgs,
+  GrantShipStrategyContract_UpdatePostedEvent_eventPostEntityHandlerContext,
+  GrantShipStrategyContract_UpdatePostedEvent_handlerContext,
+  eventLog,
+} from 'generated';
 import { FacilitatorApprovalStatus, GrantStatus } from './utils/constants';
+import { _grantId } from './utils/id';
+import { invokeActionByRoleType } from './utils/post';
 
 GrantShipStrategyContract.PoolFunded.loader(({ event, context }) => {
   context.ShipContext.load(event.srcAddress, {
@@ -69,7 +78,10 @@ GrantShipStrategyContract.RecipientRegistered.loader(({ event, context }) => {
   });
   context.Project.load(event.params.recipientId, {});
   context.Grant.load(
-    `grant-${event.srcAddress}-${event.params.recipientId}`,
+    _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    }),
     {}
   );
 });
@@ -94,7 +106,10 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
   }
 
   context.Grant.set({
-    id: `grant-${event.srcAddress}-${event.params.recipientId}`,
+    id: _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    }),
     ship_id: grantShip.id,
     project_id: project.id,
     gameManager_id: gameManager.id,
@@ -112,8 +127,28 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
   });
 });
 
-GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {});
-GrantShipStrategyContract.UpdatePosted.handler(({ event, context }) => {});
+GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
+  context.ShipContext.load(event.srcAddress, {
+    loadGrantShip: {},
+    loadGameManager: {},
+  });
+  context.Project.load(event.params.recipientId, {});
+  context.Grant.load(
+    _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    }),
+    {}
+  );
+});
+
+GrantShipStrategyContract.UpdatePosted.handler(async ({ event, context }) => {
+  if (event.params.tag.startsWith('TAG')) {
+    invokeActionByRoleType({ event, context });
+  } else {
+    context.log.warn(`Tag not found: ${event.params.tag}`);
+  }
+});
 
 GrantShipStrategyContract.MilestonesSet.loader(({ event, context }) => {});
 GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {});

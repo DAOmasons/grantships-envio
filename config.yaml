@@ -49,7 +49,7 @@ contracts:
     - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
     - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
-
+      isAsync: true
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 

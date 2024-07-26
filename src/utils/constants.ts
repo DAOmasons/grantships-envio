@@ -13,6 +13,7 @@ export enum UpdateScope {
   Game,
   Ship,
   Project,
+  Grant,
 }
 
 export enum Player {

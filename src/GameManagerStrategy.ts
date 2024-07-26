@@ -377,6 +377,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       entityAddress: event.srcAddress,
       content_id: event.params.content[1],
       postDecorator: PostDecorator.Update,
+      message: undefined,
       postedBy: event.txOrigin || 'Unknown',
       contentSchema: ContentSchema.BasicUpdate,
       timestamp: event.blockTimestamp,
