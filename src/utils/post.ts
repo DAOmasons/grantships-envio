@@ -26,7 +26,52 @@ const invokeProjectAction = ({
   event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
   context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
   contractTag: string;
-}) => {};
+}) => {
+  const [, action] = contractTag.split(':');
+
+  if (action === 'GRANT_UPDATE') {
+    const grant = context.Grant.get(
+      _grantId({
+        projectId: event.params.recipientId,
+        shipSrc: event.srcAddress,
+      })
+    );
+
+    const project = context.Project.get(event.params.recipientId);
+
+    if (!project || !grant) {
+      context.log.error(
+        `Project or grant not found. Recipient ID: ${event.params.recipientId} Src Address: ${event.srcAddress}`
+      );
+      return;
+    }
+
+    context.RawMetadata.set({
+      id: event.params.content[1],
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+
+    context.Update.set({
+      id: `grant-update-${event.transactionHash}`,
+      scope: UpdateScope.Grant,
+      tag: 'grant/update',
+      playerType: Player.Project,
+      domain_id: grant.gameManager_id,
+      entityAddress: project.id,
+      entityMetadata_id: project.metadata_id,
+      postedBy: event.txOrigin,
+      message: undefined,
+      content_id: event.params.content[1],
+      contentSchema: ContentSchema.RichText,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: grant.id,
+    });
+  }
+};
 
 const invokeShipAction = ({
   event,
