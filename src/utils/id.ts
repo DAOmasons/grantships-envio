@@ -22,3 +22,13 @@ export const _grantId = ({
   projectId: string;
   shipSrc: string;
 }) => `grant-${projectId}-${shipSrc}`;
+
+export const _applicationId = ({
+  projectId,
+  shipSrc,
+  index,
+}: {
+  projectId: string;
+  shipSrc: string;
+  index: number;
+}) => `application-${projectId}-${shipSrc}-${index}`;

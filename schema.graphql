@@ -164,6 +164,7 @@ type Grant {
   hasPendingMilestones: Boolean!
   hasRejectedMilestones: Boolean!
   allApproved: Boolean!
+  applicationIndex: Int!
   grantCompleted: Boolean!
   applicationApproved: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")

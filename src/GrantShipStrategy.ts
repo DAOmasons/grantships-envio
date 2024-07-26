@@ -7,7 +7,7 @@ import {
   eventLog,
 } from 'generated';
 import { FacilitatorApprovalStatus, GrantStatus } from './utils/constants';
-import { _grantId } from './utils/id';
+import { _applicationId, _grantId } from './utils/id';
 import { invokeActionByRoleType } from './utils/post';
 
 GrantShipStrategyContract.PoolFunded.loader(({ event, context }) => {
@@ -97,6 +97,10 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
   }
   const grantShip = context.ShipContext.getGrantShip(shipContext);
   const gameManager = context.ShipContext.getGameManager(shipContext);
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
 
   if (!grantShip || !gameManager) {
     context.log.error(
@@ -104,27 +108,86 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     );
     return;
   }
+  const grant = context.Grant.get(grantId);
 
-  context.Grant.set({
-    id: _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    ship_id: grantShip.id,
-    project_id: project.id,
-    gameManager_id: gameManager.id,
-    status: GrantStatus.ApplicationSubmitted,
-    lastUpdated: event.blockTimestamp,
-    amount: undefined,
-    facilitatorApprovalStatus: FacilitatorApprovalStatus.None,
-    hasPendingMilestones: false,
-    hasRejectedMilestones: false,
-    allApproved: false,
-    grantCompleted: false,
-    applicationApproved: false,
-    approvedMilestones_id: undefined,
-    approvedApplication_id: undefined,
-  });
+  if (!grant) {
+    context.RawMetadata.set({
+      id: event.params.metadata[1],
+      protocol: event.params.metadata[0],
+      pointer: event.params.metadata[1],
+    });
+
+    context.Application.set({
+      id: _applicationId({
+        projectId: project.id,
+        shipSrc: event.srcAddress,
+        index: 0,
+      }),
+      grant_id: grantId,
+      metadata_id: event.params.metadata[1],
+      amount: event.params.grantAmount,
+      receivingAddress: event.params.receivingAddress,
+      status: GrantStatus.ApplicationSubmitted,
+      timestamp: event.blockTimestamp,
+    });
+
+    context.Grant.set({
+      id: grantId,
+      ship_id: grantShip.id,
+      project_id: project.id,
+      gameManager_id: gameManager.id,
+      status: GrantStatus.ApplicationSubmitted,
+      applicationIndex: 0,
+      lastUpdated: event.blockTimestamp,
+      amount: event.params.grantAmount,
+      facilitatorApprovalStatus: FacilitatorApprovalStatus.None,
+      hasPendingMilestones: false,
+      hasRejectedMilestones: false,
+      allApproved: false,
+      grantCompleted: false,
+      applicationApproved: false,
+      approvedMilestones_id: undefined,
+      approvedApplication_id: undefined,
+    });
+  } else {
+    context.RawMetadata.set({
+      id: event.params.metadata[1],
+      protocol: event.params.metadata[0],
+      pointer: event.params.metadata[1],
+    });
+
+    context.Application.set({
+      id: _applicationId({
+        projectId: project.id,
+        shipSrc: event.srcAddress,
+        index: grant.applicationIndex + 1,
+      }),
+      grant_id: grantId,
+      metadata_id: event.params.metadata[1],
+      amount: event.params.grantAmount,
+      receivingAddress: event.params.receivingAddress,
+      status: GrantStatus.ApplicationSubmitted,
+      timestamp: event.blockTimestamp,
+    });
+    context.Grant.set({
+      id: grantId,
+      ship_id: grantShip.id,
+      project_id: project.id,
+      gameManager_id: gameManager.id,
+      status: GrantStatus.ApplicationSubmitted,
+      applicationIndex: grant.applicationIndex + 1,
+      lastUpdated: event.blockTimestamp,
+      amount: event.params.grantAmount,
+      facilitatorApprovalStatus: FacilitatorApprovalStatus.None,
+      hasPendingMilestones: false,
+      hasRejectedMilestones: false,
+      allApproved: false,
+      grantCompleted: false,
+      applicationApproved: false,
+      approvedMilestones_id: undefined,
+      approvedApplication_id: undefined,
+    });
+  }
 });
 
 GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
