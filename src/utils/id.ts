@@ -32,3 +32,25 @@ export const _applicationId = ({
   shipSrc: string;
   index: number;
 }) => `application-${projectId}-${shipSrc}-${index}`;
+
+export const _milestoneSetId = ({
+  projectId,
+  shipSrc,
+  index,
+}: {
+  projectId: string;
+  shipSrc: string;
+  index: number;
+}) => `milestone-set-${projectId}-${shipSrc}-${index}`;
+
+export const _milestoneId = ({
+  projectId,
+  shipSrc,
+  setIndex,
+  index,
+}: {
+  projectId: string;
+  shipSrc: string;
+  setIndex: number;
+  index: number;
+}) => `milestone-${projectId}-${shipSrc}-${setIndex}-${index}`;

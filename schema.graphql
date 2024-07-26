@@ -164,17 +164,17 @@ type Grant {
   hasPendingMilestones: Boolean!
   hasRejectedMilestones: Boolean!
   allApproved: Boolean!
-  applicationIndex: Int!
   grantCompleted: Boolean!
   applicationApproved: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
-  approvedMilestones: MilestoneSet
+  currentMilestones: MilestoneSet
   applications: [Application!]! @derivedFrom(field: "grant")
-  approvedApplication: Application
+  currentApplication: Application
 }
 
 type Application {
   id: ID!
+  index: Int!
   grant: Grant!
   metadata: RawMetadata!
   amount: BigInt!
@@ -185,15 +185,16 @@ type Application {
 
 type MilestoneSet {
   id: ID!
+  index: Int!
   grant: Grant!
   timestamp: Int!
+  status: Int!
   milestones: [Milestone!]! @derivedFrom(field: "milestoneSet")
 }
 
 type Milestone {
   id: ID!
   percentage: BigInt!
-  amount: BigInt!
   metadata: RawMetadata!
   milestoneSet: MilestoneSet!
   status: Int!

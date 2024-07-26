@@ -151,16 +151,10 @@ const invokeShipAction = ({
       return;
     }
 
-    const applicationId = _applicationId({
-      projectId: grant.project_id,
-      shipSrc: event.srcAddress,
-      index: grant.applicationIndex,
-    });
-
-    const application = context.Application.get(applicationId);
+    const application = context.Grant.getCurrentApplication(grant);
 
     if (!application) {
-      context.log.error(`Application not found: ${applicationId}`);
+      context.log.error(`Application not found: ${grant.id}`);
       return;
     }
 

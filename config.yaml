@@ -41,7 +41,7 @@ contracts:
     - event: GrantShipInitialized(uint256 poolId, address gameManager, uint256 operatorHatId, uint256 facilitatorHatId, address registryAnchor)
     - event: RecipientRegistered(address recipientId, address receivingAddress, uint256 grantAmount, (uint256,string) metadata, uint256 grantIndex)
     - event: RecipientStatusChanged(address recipientId, uint8 status, (uint256,string) reason)
-    - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256,string)[] milestones)
+    - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256, (uint256,string), uint8)[] milestones)
     - event: MilestoneSubmitted(address recipientId, uint256 milestoneId, (uint256,string) metadata)
     - event: MilestoneStatusChanged(address recipientId, uint256 milestoneId, uint8 status)
     - event: MilestoneRejected(address recipientId, uint256 milestoneId, (uint256,string) reason)
