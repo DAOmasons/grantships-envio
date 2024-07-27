@@ -706,3 +706,54 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     hostEntityId: grant.id,
   });
 });
+
+GrantShipStrategyContract.GrantComplete.loader(({ event, context }) => {
+  context.Grant.load(
+    _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    }),
+    {}
+  );
+});
+
+GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
+
+  const grant = context.Grant.get(grantId);
+
+  if (!grant) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
+
+  context.Grant.set({
+    ...grant,
+    grantCompleted: true,
+    lastUpdated: event.blockTimestamp,
+  });
+
+  context.Update.set({
+    id: `grant-update-${event.transactionHash}`,
+    scope: UpdateScope.Grant,
+    tag: 'grant/completed',
+    message: `Grant has been completed`,
+    playerType: Player.System,
+    domain_id: grant.gameManager_id,
+    entityAddress: 'system',
+    entityMetadata_id: undefined,
+    postedBy: event.txOrigin,
+    contentSchema: undefined,
+    content_id: undefined,
+    postDecorator: undefined,
+    timestamp: event.blockTimestamp,
+    postBlockNumber: event.blockNumber,
+    chainId: event.chainId,
+    hostEntityId: grant.id,
+  });
+
+  addTransaction(event, context.Transaction.set);
+});
