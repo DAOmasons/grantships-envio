@@ -160,10 +160,7 @@ type Grant {
   status: Int!
   lastUpdated: Int!
   amount: BigInt
-  facilitatorApprovalStatus: Int!
-  hasPendingMilestones: Boolean!
-  hasRejectedMilestones: Boolean!
-  allApproved: Boolean!
+  isAllocated: Boolean!
   grantCompleted: Boolean!
   applicationApproved: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
@@ -219,8 +216,8 @@ type Update {
   entityMetadata: RawMetadata
   postedBy: String # address
   message: String
-  content: RawMetadata!
-  contentSchema: Int!
+  content: RawMetadata
+  contentSchema: Int
   postDecorator: Int
   timestamp: Int!
   postBlockNumber: Int!

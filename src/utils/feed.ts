@@ -112,3 +112,7 @@ export const addFeedCard = ({
     externalLink,
   });
 };
+
+export const inWeiMarker = (value: BigInt): string => {
+  return `##IN-WEI${value}##`;
+};

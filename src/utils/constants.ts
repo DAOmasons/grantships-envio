@@ -60,6 +60,8 @@ export enum GrantStatus {
   MilestonesSubmitted,
   MilestonesRejected,
   MilestonesApproved,
+  Allocated,
+  FacilitatorRejected,
   Building,
   Completed,
 }
