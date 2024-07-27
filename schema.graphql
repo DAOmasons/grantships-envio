@@ -186,6 +186,7 @@ type MilestoneSet {
   grant: Grant!
   timestamp: Int!
   status: Int!
+  milestoneLength: Int!
   milestones: [Milestone!]! @derivedFrom(field: "milestoneSet")
 }
 

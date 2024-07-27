@@ -43,13 +43,16 @@ contracts:
     - event: RecipientStatusChanged(address recipientId, uint8 status, (uint256,string) reason)
     - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256, (uint256,string), uint8)[] milestones)
     - event: MilestoneSubmitted(address recipientId, uint256 milestoneId, (uint256,string) metadata)
+      isAsync: true
     - event: MilestoneStatusChanged(address recipientId, uint256 milestoneId, uint8 status)
+      isAsync: true
     - event: MilestoneRejected(address recipientId, uint256 milestoneId, (uint256,string) reason)
+      isAsync: true
     - event: MilestonesReviewed(address recipientId, uint8 status, (uint256,string) reason)
     - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
     - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
-      isAsync: true
+    - event: GrantComplete(address recipientId, uint256 amount, (uint256, string) metadata);
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 

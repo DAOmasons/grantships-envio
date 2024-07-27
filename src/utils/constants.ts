@@ -20,6 +20,7 @@ export enum Player {
   Project,
   Ship,
   GameFacilitator,
+  System,
 }
 
 export enum PostDecorator {
