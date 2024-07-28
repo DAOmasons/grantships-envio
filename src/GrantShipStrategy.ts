@@ -167,14 +167,16 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
 });
 
 GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
+  const [, , potentialProjectId] = event.params.tag.split(':');
   context.ShipContext.load(event.srcAddress, {
     loadGrantShip: {},
     loadGameManager: {},
   });
+
   context.Project.load(event.params.recipientId, {});
   context.Grant.load(
     _grantId({
-      projectId: event.params.recipientId,
+      projectId: potentialProjectId || event.params.recipientId,
       shipSrc: event.srcAddress,
     }),
     { loadCurrentApplication: {} }
@@ -183,6 +185,7 @@ GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
 
 GrantShipStrategyContract.UpdatePosted.handler(({ event, context }) => {
   if (event.params.tag.startsWith('TAG')) {
+    context.log.info(`UpdatePosted: ${event.params.tag}`);
     invokeActionByRoleType({ event, context });
   } else {
     context.log.warn(`Tag not found: ${event.params.tag}`);

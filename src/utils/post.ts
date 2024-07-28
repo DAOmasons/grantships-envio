@@ -91,16 +91,26 @@ const invokeShipAction = ({
 }) => {
   const [, action] = contractTag.split(':');
 
-  if (action === 'BEACON') {
+  if (action === 'SHIP_BEACON') {
     context.RawMetadata.set({
       id: event.params.content[1],
       protocol: event.params.content[0],
       pointer: event.params.content[1],
     });
-
     context.GrantShip.set({
       ...ship,
       beaconMessage_id: event.params.content[1],
+    });
+    addTransaction(event, context.Transaction.set);
+  } else if (action === 'SHIP_APPLICATION') {
+    context.RawMetadata.set({
+      id: event.params.content[1],
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+    context.GrantShip.set({
+      ...ship,
+      customApplication_id: event.params.content[1],
     });
     addTransaction(event, context.Transaction.set);
   } else if (action === 'GRANT_UPDATE') {
@@ -140,9 +150,9 @@ const invokeShipAction = ({
     });
     addTransaction(event, context.Transaction.set);
   } else if (action === 'SHIP_REVIEW') {
-    const [, , decision] = event.params.content[1].split(':');
+    const [, , projectId, decision] = event.params.content[1].split(':');
     const grantId = _grantId({
-      projectId: event.params.recipientId,
+      projectId: projectId,
       shipSrc: event.srcAddress,
     });
     const grant = context.Grant.get(grantId);

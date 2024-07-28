@@ -150,6 +150,7 @@ type GrantShip @entity {
   # # Game Manager => Distributed
   isDistributed: Boolean
   beaconMessage: RawMetadata
+  customApplication: RawMetadata
 }
 
 type Grant {

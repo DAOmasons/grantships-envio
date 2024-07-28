@@ -84,6 +84,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       isAllocated: undefined,
       isDistributed: undefined,
       beaconMessage_id: undefined,
+      customApplication_id: undefined,
     });
 
     context.ProfileIdToAnchor.set({
