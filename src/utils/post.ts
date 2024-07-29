@@ -6,7 +6,13 @@ import {
   grantShipEntity,
 } from 'generated';
 import { _applicationId, _grantId } from './id';
-import { ContentSchema, GrantStatus, Player, UpdateScope } from './constants';
+import {
+  ContentSchema,
+  GameStatus,
+  GrantStatus,
+  Player,
+  UpdateScope,
+} from './constants';
 import { addTransaction } from './sync';
 
 const invokeFacilitatorAction = ({
@@ -188,15 +194,15 @@ const invokeShipAction = ({
       });
     }
     addTransaction(event, context.Transaction.set);
-  } else if (action === 'SHIP_REVIEW') {
-    const [, , projectId, decision] = event.params.content[1].split(':');
+  } else if (action === 'SHIP_REVIEW_GRANT') {
+    const [, , projectId, decision] = event.params.tag.split(':');
     const grantId = _grantId({
       projectId: projectId,
       shipSrc: event.srcAddress,
     });
     const grant = context.Grant.get(grantId);
     if (!grant) {
-      context.log.error(`Grant not found: ${event.params.recipientId}`);
+      context.log.error(`Grant not found: ${_grantId}`);
       return;
     }
 
@@ -207,8 +213,8 @@ const invokeShipAction = ({
       return;
     }
 
-    const isApproved = decision === 'APPROVED';
-    const isRejected = decision === 'REJECTED';
+    const isApproved = Number(decision) === GameStatus.Accepted;
+    const isRejected = Number(decision) === GameStatus.Rejected;
 
     if (!isApproved && !isRejected) {
       context.log.error(`Invalid decision: ${decision}`);
@@ -230,15 +236,15 @@ const invokeShipAction = ({
 
     context.Application.set({
       ...application,
-      status: isApproved
-        ? GrantStatus.ApplicationApproved
-        : GrantStatus.ApplicationRejected,
+      status: Number(decision),
     });
 
     context.Update.set({
       id: `grant-update-${event.transactionHash}`,
       scope: UpdateScope.Grant,
-      tag: 'grant/approve/application',
+      tag: isApproved
+        ? 'grant/approve/application'
+        : 'grant/reject/application',
       playerType: Player.Ship,
       domain_id: grant.gameManager_id,
       entityAddress: ship.id,
@@ -248,7 +254,7 @@ const invokeShipAction = ({
         ? `${ship.name} has approved the Application`
         : `${ship.name} has not approved the Application`,
       content_id: event.params.content[1],
-      contentSchema: ContentSchema.BasicUpdate,
+      contentSchema: ContentSchema.Reason,
       postDecorator: undefined,
       timestamp: event.blockTimestamp,
       postBlockNumber: event.blockNumber,

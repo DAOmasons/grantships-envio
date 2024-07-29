@@ -185,6 +185,7 @@ GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
 
 GrantShipStrategyContract.UpdatePosted.handler(({ event, context }) => {
   if (event.params.tag.startsWith('TAG')) {
+    context.log.info(`UpdatePosted: ${event.params.tag}`);
     invokeActionByRoleType({ event, context });
   } else {
     context.log.warn(`Tag not found: ${event.params.tag}`);
