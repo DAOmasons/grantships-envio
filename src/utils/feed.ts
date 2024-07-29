@@ -5,10 +5,11 @@ import {
   feedItemEntityEntity,
   rawMetadataEntity,
 } from 'generated';
+import { Player } from './constants';
 
 type Object = {
   id: string;
-  type: string;
+  playerType: Player;
   name: string;
 };
 
@@ -33,7 +34,7 @@ export const addFeedCard = ({
   subject,
   embed,
   object,
-  content,
+  richTextContent,
   message,
   setEntity,
   setCard,
@@ -49,7 +50,7 @@ export const addFeedCard = ({
   subject: Subject;
   object?: Object;
   embed?: Embed;
-  content?: {
+  richTextContent?: {
     protocol: bigint;
     pointer: string;
   };
@@ -66,7 +67,7 @@ export const addFeedCard = ({
   setEntity({
     id: subject.id,
     name: subject.name,
-    entityType: subject.type,
+    playerType: subject.playerType,
   });
 
   if (embed) {
@@ -83,15 +84,15 @@ export const addFeedCard = ({
     setEntity({
       id: object.id,
       name: object.name,
-      entityType: object.type,
+      playerType: object.playerType,
     });
   }
 
-  if (content) {
+  if (richTextContent) {
     setMetadata({
-      id: content.pointer,
-      protocol: content.protocol,
-      pointer: content.pointer,
+      id: richTextContent.pointer,
+      protocol: richTextContent.protocol,
+      pointer: richTextContent.pointer,
     });
   }
 
@@ -99,7 +100,7 @@ export const addFeedCard = ({
     id: cardId,
     timestamp: event.blockTimestamp,
     message,
-    content_id: content?.pointer || undefined,
+    richTextContent_id: richTextContent?.pointer || undefined,
     sender: event.txOrigin,
     tag,
     subject_id: subject.id,
@@ -110,4 +111,8 @@ export const addFeedCard = ({
     internalLink,
     externalLink,
   });
+};
+
+export const inWeiMarker = (value: BigInt): string => {
+  return `##IN-WEI${value}##`;
 };

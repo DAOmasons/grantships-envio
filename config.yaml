@@ -16,10 +16,14 @@ contracts:
     - event: GameManagerDeployedWithPool(address gameManagerAddress, bytes32 profileId, uint256 poolId, string templateName, address tokenAddress, bytes initData, (uint256,string) poolMetadata, (uint256,string) profileMetadata)
     - event: RootAccountSwitched(address newRootAccount)
     - event: TemplateCreated(string name, address templateAddress)
+  - name: GrantShipFactory
+    handler: src/GrantShipFactory.ts
+    events: 
+    - event: ShipCreated(address strategyAddress, address anchorAddress, address sender)  
   - name: GameManagerStrategy
     handler: src/GameManagerStrategy.ts
     events:
-    - event: Registered(address anchorAddress, bytes applicationData, address sender)
+    - event: Registered(address indexed anchorAddress, bytes applicationData, address sender)
     - event: GameManagerInitialized(uint256 gameFacilitatorId,address hatsAddress,address rootAccount,address token,uint256 poolId)
     - event: RoundCreated(uint256 gameIndex,uint256 totalRoundAmount)
     - event: ShipLaunched(address shipAddress,uint256 shipPoolId,address recipientId,string shipName,(uint256,string) metadata)
@@ -27,13 +31,32 @@ contracts:
     - event: RecipientAccepted(address recipientAddress,(uint256,string) reason)
     - event: GameActive(bool active,uint256 gameIndex)
     - event: UpdatePosted(string tag,uint256 role,address recipientId,(uint256,string) content)
-    - event: Allocated(address recipientId, uint256 amount,address tokenAddress, address sender)
-    - event: Distributed(address recipientId, address shipAddress, uint256 grantAmount, address sender)
-    - event: GameRoundTimesCreated(uint256 gameRoundIndex,uint256 startTime,uint256 endTime)
-  - name: GrantShipFactory
-    handler: src/GrantShipFactory.ts
+    - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
+    - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
+    - event: GameRoundTimesCreated(uint256 indexed gameRoundIndex, uint256 startTime, uint256 endTime)
+  - name: GrantShipStrategy
+    handler: src/GrantShipStrategy.ts
+    events:
+    - event: PoolFunded(uint256 poolId, uint256 amount, uint256 amountPercentage)
+    - event: GrantShipInitialized(uint256 poolId, address gameManager, uint256 operatorHatId, uint256 facilitatorHatId, address registryAnchor)
+    - event: RecipientRegistered(address recipientId, address receivingAddress, uint256 grantAmount, (uint256,string) metadata, uint256 grantIndex)
+    - event: RecipientStatusChanged(address recipientId, uint8 status, (uint256,string) reason)
+    - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256, (uint256,string), uint8)[] milestones)
+    - event: MilestoneSubmitted(address recipientId, uint256 milestoneId, (uint256,string) metadata)
+      isAsync: true
+    - event: MilestoneStatusChanged(address recipientId, uint256 milestoneId, uint8 status)
+      isAsync: true
+    - event: MilestoneRejected(address recipientId, uint256 milestoneId, (uint256,string) reason)
+      isAsync: true
+    - event: MilestonesReviewed(address recipientId, uint8 status, (uint256,string) reason)
+    - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
+    - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
+    - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
+    - event: GrantComplete(address recipientId, uint256 amount, (uint256, string) metadata);
+  - name: AlloPoster
+    handler: src/AlloPoster.ts
     events: 
-    # Voting
+    - event: PostEvent(string tag, bytes32 profileId, (uint256, string), address anchor)
   - name: HatsPoster
     handler: src/HatsPoster.ts
     events:
@@ -59,7 +82,7 @@ contracts:
     - event: Initialized(address contest, address hatsAddress, uint256 hatId)
     - event: Registered(bytes32 choiceId, ((uint256, string), bytes, bool), address contest)
     - event: Removed(bytes32 choiceId, address contest)
-      isAsync: true
+      isAsync: true    
   - name: ERC20VotesPoints
     handler: src/ERC20VotesPoints.ts
     events:
@@ -91,13 +114,15 @@ networks:
   contracts:
   - name: Registry
     abi_file_path: abis/Registry.json
-    address: 
-    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+    address: 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
   - name: GameManagerFactory
-    address: 
-    - 0x103f8273b0ea01ffd5a457ed51fdaca81e971378
+    address: 0x103f8273b0ea01ffd5a457ed51fdaca81e971378
+  - name: GrantShipFactory
+    address: 0x1F8cbC9d98E63575F8eE4C21a7BA68A34f66F280
   - name: GameManagerStrategy
-    address:   
+    address:
+  - name: GrantShipStrategy
+    address:  
   - name: FastFactory
     address: 0x2bABC10b90c67399F820433358fEb85fbB24f22f
   - name: HatsAllowList
@@ -112,18 +137,22 @@ networks:
     address:  
   - name: HatsPoster
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
+  - name: AlloPoster
+    address: 0x168752edda2ca12e361b0c6a60d958c25818ec9b
 - id: 42161 # Arbitrum One
   start_block: 195499276
   end_block: null
   contracts:
   - name: Registry
-    address: 
-    - 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
+    address: 0x4AAcca72145e1dF2aeC137E1f3C5E3D75DB8b5f3
   - name: GameManagerFactory
-    address:
-    - 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
+    address: 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
+  - name: GrantShipFactory
+    address: 0xe3c270Bf363f3F55e8Fd488c2728227AeF436243
   - name: GameManagerStrategy
     address:
+  - name: GrantShipStrategy
+    address:  
   - name: FastFactory
     address: 0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70
   - name: HatsAllowList
@@ -138,5 +167,8 @@ networks:
     address:  
   - name: HatsPoster
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
+  - name: AlloPoster
+    address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
+    
 
   

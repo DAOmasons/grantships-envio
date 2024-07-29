@@ -3,10 +3,11 @@ import {
   ContentSchema,
   GameStatus,
   PostDecorator,
+  Player,
   UpdateScope,
 } from './utils/constants';
 import { addTransaction } from './utils/sync';
-import { addFeedCard, feedCardId } from './utils/feed';
+import { addFeedCard } from './utils/feed';
 import { CHAIN } from './utils/network';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
@@ -27,7 +28,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       event,
       subject: {
         id: event.srcAddress,
-        type: 'facilitators',
+        playerType: Player.GameFacilitator,
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
@@ -263,14 +264,14 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
     ...ship,
     isDistributed: true,
     status: GameStatus.Active,
-    totalRoundAmount: event.params.grantAmount,
+    totalRoundAmount: event.params.amount,
   });
 
   context.GameRound.set({
     ...currentRound,
     gameStatus: GameStatus.Funded,
     totalDistributedAmount:
-      currentRound.totalDistributedAmount + event.params.grantAmount,
+      currentRound.totalDistributedAmount + event.params.amount,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -372,13 +373,18 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       tag: event.params.tag,
       scope: UpdateScope.Game,
       domain_id: event.srcAddress,
-      posterRole: event.params.role,
+      playerType: Player.GameFacilitator,
       entityAddress: event.srcAddress,
       content_id: event.params.content[1],
       postDecorator: PostDecorator.Update,
+      message: undefined,
       postedBy: event.txOrigin || 'Unknown',
       contentSchema: ContentSchema.BasicUpdate,
       timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      entityMetadata_id: undefined,
+      hostEntityId: event.srcAddress,
     });
 
     addTransaction(event, context.Transaction.set);

@@ -77,7 +77,7 @@ type ProfileIdToAnchor {
 }
 
 type Project @entity {
-  id: String!
+  id: ID!
   chainId: Int!
   profileId: String! # bytes32
   status: Int! # uint8
@@ -93,6 +93,13 @@ type Project @entity {
   grants: [Grant!]! @derivedFrom(field: "project")
   # members: ProfileMemberGroup
   totalAmountReceived: BigInt!
+}
+
+type ShipContext {
+  id: ID!
+  shipAddress: String!
+  grantShip: GrantShip!
+  gameManager: GameManager!
 }
 
 type GrantShip @entity {
@@ -142,13 +149,55 @@ type GrantShip @entity {
   isAllocated: Boolean
   # # Game Manager => Distributed
   isDistributed: Boolean
+  beaconMessage: RawMetadata
+  customApplication: RawMetadata
 }
 
 type Grant {
   id: ID!
   ship: GrantShip!
   project: Project!
-  # project: Project!
+  gameManager: GameManager!
+  status: Int!
+  lastUpdated: Int!
+  amount: BigInt
+  isAllocated: Boolean!
+  grantCompleted: Boolean!
+  applicationApproved: Boolean!
+  milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
+  currentMilestones: MilestoneSet
+  applications: [Application!]! @derivedFrom(field: "grant")
+  currentApplication: Application
+}
+
+type Application {
+  id: ID!
+  index: Int!
+  grant: Grant!
+  metadata: RawMetadata!
+  amount: BigInt!
+  receivingAddress: String!
+  status: Int!
+  timestamp: Int!
+}
+
+type MilestoneSet {
+  id: ID!
+  index: Int!
+  grant: Grant!
+  timestamp: Int!
+  status: Int!
+  milestoneLength: Int!
+  milestones: [Milestone!]! @derivedFrom(field: "milestoneSet")
+}
+
+type Milestone {
+  id: ID!
+  percentage: BigInt!
+  metadata: RawMetadata!
+  milestoneSet: MilestoneSet!
+  status: Int!
+  grant: Grant!
 }
 
 type Transaction {
@@ -156,27 +205,33 @@ type Transaction {
   blockNumber: BigInt!
   srcAddress: String!
   txHash: String!
+  timestamp: Int!
 }
 
 type Update {
   id: ID!
   scope: Int!
   tag: String!
-  posterRole: BigInt!
-  domain: GameManager!
-  entityAddress: String! # address
-  postedBy: String! # address
-  content: RawMetadata!
-  contentSchema: Int!
-  postDecorator: Int!
+  playerType: Int!
+  domain: GameManager
+  entityAddress: String!
+  entityMetadata: RawMetadata
+  postedBy: String # address
+  message: String
+  content: RawMetadata
+  contentSchema: Int
+  postDecorator: Int
   timestamp: Int!
+  postBlockNumber: Int!
+  chainId: Int!
+  hostEntityId: String!
 }
 
 type FeedCard {
   id: ID!
   timestamp: Int!
   message: String
-  content: RawMetadata
+  richTextContent: RawMetadata
   sender: String
   tag: String!
   subjectMetadataPointer: String!
@@ -191,7 +246,7 @@ type FeedCard {
 type FeedItemEntity {
   id: ID!
   name: String!
-  entityType: String!
+  playerType: Int!
   # feedCardsAsSubject: [FeedCard!]! @derivedFrom(field: "subject")
   # feedCardsAsObject: [FeedCard!]! @derivedFrom(field: "object")
 }

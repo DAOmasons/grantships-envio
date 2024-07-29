@@ -12,6 +12,15 @@ export enum GameStatus {
 export enum UpdateScope {
   Game,
   Ship,
+  Project,
+  Grant,
+}
+
+export enum Player {
+  Project,
+  Ship,
+  GameFacilitator,
+  System,
 }
 
 export enum PostDecorator {
@@ -20,6 +29,7 @@ export enum PostDecorator {
 
 export enum ContentSchema {
   BasicUpdate, // { text: string }
+  RichText, // { type: 'doc' content: Array<ContentNode> }
 }
 
 export enum Module {
@@ -42,3 +52,25 @@ export enum ContestStatus {
   Finalized,
   Executed,
 }
+
+export enum GrantStatus {
+  None,
+  ApplicationSubmitted,
+  ApplicationRejected,
+  ApplicationApproved,
+  MilestonesSubmitted,
+  MilestonesRejected,
+  MilestonesApproved,
+  Allocated,
+  FacilitatorRejected,
+  Building,
+  Completed,
+}
+
+// Took out
+// facilitator approve
+// facilitator reject
+// //
+// MilestoneSubmitted,
+//   MilestoneRejected,
+//   MilestoneApproved,
