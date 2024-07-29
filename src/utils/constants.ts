@@ -30,6 +30,7 @@ export enum PostDecorator {
 export enum ContentSchema {
   BasicUpdate, // { text: string }
   RichText, // { type: 'doc' content: Array<ContentNode> }
+  Reason, // { reason: string }
 }
 
 export enum Module {
