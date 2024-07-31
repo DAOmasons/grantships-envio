@@ -185,7 +185,6 @@ GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
 
 GrantShipStrategyContract.UpdatePosted.handler(({ event, context }) => {
   if (event.params.tag.startsWith('TAG')) {
-    context.log.info(`UpdatePosted: ${event.params.tag}`);
     invokeActionByRoleType({ event, context });
   } else {
     context.log.warn(`Tag not found: ${event.params.tag}`);
@@ -228,7 +227,7 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
     id: milestoneSetId,
     index: setIndex,
     grant_id: grantId,
-    status: GrantStatus.MilestonesSubmitted,
+    status: GameStatus.Pending,
     timestamp: event.blockTimestamp,
     milestoneLength: event.params.milestones.length,
   });
@@ -253,6 +252,7 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
     context.Milestone.set({
       id: milestoneId,
       percentage: milestone[0],
+      index: i,
       metadata_id: metadata[1],
       milestoneSet_id: milestoneSetId,
       status: GameStatus.None,
@@ -262,6 +262,7 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
 
   context.Grant.set({
     ...grant,
+    status: GrantStatus.MilestonesSubmitted,
     currentMilestones_id: milestoneSetId,
     lastUpdated: event.blockTimestamp,
   });
@@ -288,6 +289,7 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
+
   const grant = context.Grant.get(grantId);
   const currentMilestones = grant
     ? context.Grant.getCurrentMilestones(grant)
@@ -326,7 +328,9 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
   context.Update.set({
     id: `grant-update-${event.transactionHash}`,
     scope: UpdateScope.Grant,
-    tag: 'grant/milestones/',
+    tag: isApproved
+      ? 'grant/approve/milestoneSet'
+      : 'grant/reject/milestoneSet',
     playerType: Player.Ship,
     domain_id: grant.gameManager_id,
     entityAddress: ship.id,
@@ -334,13 +338,15 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
     postedBy: event.txOrigin,
     message: `${ship.name} has ${isApproved ? 'approved' : 'not approved'} ${project.name}'s Milestones Draft`,
     content_id: event.params.reason[1],
-    contentSchema: ContentSchema.BasicUpdate,
+    contentSchema: ContentSchema.Reason,
     postDecorator: undefined,
     timestamp: event.blockTimestamp,
     postBlockNumber: event.blockNumber,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GrantShipStrategyContract.RecipientStatusChanged.loader(
@@ -389,9 +395,9 @@ GrantShipStrategyContract.RecipientStatusChanged.handler(
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `grant-update-${event.transactionHash}-${event.logIndex}`,
       scope: UpdateScope.Grant,
-      tag: 'grant/allocated',
+      tag: isApproved ? 'grant/allocate/approved' : 'grant/allocate/rejected',
       message: `Facilitators have ${isApproved ? 'approved' : 'not approved'} ${project.name}`,
       playerType: Player.GameFacilitator,
       domain_id: gameManager.id,
@@ -399,7 +405,7 @@ GrantShipStrategyContract.RecipientStatusChanged.handler(
       entityMetadata_id: undefined,
       postedBy: event.txOrigin,
       content_id: event.params.reason[1],
-      contentSchema: ContentSchema.BasicUpdate,
+      contentSchema: ContentSchema.Reason,
       postDecorator: undefined,
       timestamp: event.blockTimestamp,
       postBlockNumber: event.blockNumber,
@@ -441,12 +447,17 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
     lastUpdated: event.blockTimestamp,
   });
 
+  context.GrantShip.set({
+    ...ship,
+    totalAllocated: ship.totalAllocated + event.params.amount,
+  });
+
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `grant-update-${event.transactionHash}-${event.logIndex}`,
     scope: UpdateScope.Grant,
-    tag: 'grant/allocated/ship',
+    tag: 'grant/allocation/locked',
     message: `Grant is locked in! ${ship.name} has allocated ${inWeiMarker(event.params.amount)} to ${project.name}`,
-    playerType: Player.Ship,
+    playerType: Player.System,
     domain_id: gameManager.id,
     entityAddress: ship.id,
     entityMetadata_id: ship.profileMetadata_id,
@@ -512,7 +523,7 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `${event.params.milestoneId}:milestone-submit-${event.transactionHash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/milestone/submit',
       message: `${project.name} has submitted ${event.params.milestoneId + 1n}`,
@@ -576,7 +587,7 @@ GrantShipStrategyContract.MilestoneStatusChanged.handlerAsync(
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `${event.params.milestoneId}:grant-update-${event.transactionHash}-${event.logIndex}`,
       scope: UpdateScope.Grant,
       tag: 'grant/milestone/accepted',
       message: `${ship.name} has approved milestone ${event.params.milestoneId + 1n}`,
@@ -638,6 +649,12 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
       return;
     }
 
+    context.RawMetadata.set({
+      id: event.params.reason[1],
+      protocol: event.params.reason[0],
+      pointer: event.params.reason[1],
+    });
+
     context.Milestone.set({
       ...milestone,
       status: GameStatus.Rejected,
@@ -653,8 +670,8 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
       entityAddress: ship.id,
       entityMetadata_id: ship.profileMetadata_id,
       postedBy: event.txOrigin,
-      contentSchema: undefined,
-      content_id: undefined,
+      contentSchema: ContentSchema.Reason,
+      content_id: event.params.reason[1],
       postDecorator: undefined,
       timestamp: event.blockTimestamp,
       postBlockNumber: event.blockNumber,
@@ -691,7 +708,7 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
   }
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `${event.params.amount}:grant-update-${event.transactionHash}-${event.logIndex}`,
     scope: UpdateScope.Grant,
     tag: 'grant/distributed',
     message: `${ship.name} has distributed ${inWeiMarker(event.params.amount)} to ${project.name} at recipient address ${event.params.recipientAddress}`,
@@ -708,6 +725,8 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
+
+  addTransaction(event, context.Transaction.set);
 });
 
 GrantShipStrategyContract.GrantComplete.loader(({ event, context }) => {

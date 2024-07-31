@@ -195,6 +195,7 @@ type Milestone {
   id: ID!
   percentage: BigInt!
   metadata: RawMetadata!
+  index: Int!
   milestoneSet: MilestoneSet!
   status: Int!
   grant: Grant!
