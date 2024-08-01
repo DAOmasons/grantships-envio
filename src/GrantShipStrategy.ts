@@ -159,6 +159,9 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     isAllocated: false,
     grantCompleted: false,
     applicationApproved: false,
+    hasPendingMilestones: false,
+    hasRejectedMilestones: false,
+    allMilestonesApproved: false,
     currentApplication_id: applicationId,
     currentMilestones_id: undefined,
   });
@@ -230,6 +233,9 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
     status: GameStatus.Pending,
     timestamp: event.blockTimestamp,
     milestoneLength: event.params.milestones.length,
+    milestonesCompleted: 0,
+    milestonesRejected: 0,
+    milestonesPending: 0,
   });
 
   for (let i = 0; i < event.params.milestones.length; i++) {
@@ -386,6 +392,7 @@ GrantShipStrategyContract.RecipientStatusChanged.handler(
       status: isApproved
         ? GrantStatus.Allocated
         : GrantStatus.FacilitatorRejected,
+      lastUpdated: event.blockTimestamp,
     });
 
     context.RawMetadata.set({
@@ -511,9 +518,23 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
       return;
     }
 
-    context.Milestone.set({
-      ...milestone,
-      status: GameStatus.Pending,
+    const isResubmitting = milestone.status === GameStatus.Rejected;
+    const newMilestonesRejectedCount = isResubmitting
+      ? currentMilestones.milestonesRejected - 1
+      : currentMilestones.milestonesRejected;
+    const hasRejectedMilestones = newMilestonesRejectedCount > 0;
+
+    context.Grant.set({
+      ...grant,
+      hasPendingMilestones: true,
+      hasRejectedMilestones,
+      lastUpdated: event.blockTimestamp,
+    });
+
+    context.MilestoneSet.set({
+      ...currentMilestones,
+      milestonesPending: currentMilestones.milestonesPending + 1,
+      milestonesRejected: newMilestonesRejectedCount,
     });
 
     context.RawMetadata.set({
@@ -580,6 +601,27 @@ GrantShipStrategyContract.MilestoneStatusChanged.handlerAsync(
       context.log.error(`Milestone not found: ${event.params.milestoneId}`);
       return;
     }
+
+    const allMilestonesApproved =
+      currentMilestones.milestonesCompleted + 1 ===
+      currentMilestones.milestoneLength;
+    const hasPendingMilestones = currentMilestones.milestonesPending - 1 > 0;
+
+    context.MilestoneSet.set({
+      ...currentMilestones,
+      milestonesPending: currentMilestones.milestonesPending - 1,
+      milestonesCompleted: currentMilestones.milestonesCompleted + 1,
+    });
+
+    context.Grant.set({
+      ...grant,
+      allMilestonesApproved,
+      hasPendingMilestones,
+      lastUpdated: event.blockTimestamp,
+      status: allMilestonesApproved
+        ? GrantStatus.AllMilestonesComplete
+        : grant.status,
+    });
 
     context.Milestone.set({
       ...milestone,
@@ -649,6 +691,10 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
       return;
     }
 
+    const newPendingMilestoneCount = currentMilestones.milestonesPending - 1;
+    const hasPendingMilestones = newPendingMilestoneCount > 0;
+    const newMilestonesRejectedCount = currentMilestones.milestonesRejected + 1;
+
     context.RawMetadata.set({
       id: event.params.reason[1],
       protocol: event.params.reason[0],
@@ -658,6 +704,19 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
     context.Milestone.set({
       ...milestone,
       status: GameStatus.Rejected,
+    });
+
+    context.MilestoneSet.set({
+      ...currentMilestones,
+      milestonesPending: newPendingMilestoneCount,
+      milestonesRejected: newMilestonesRejectedCount,
+    });
+
+    context.Grant.set({
+      ...grant,
+      hasRejectedMilestones: true,
+      hasPendingMilestones,
+      lastUpdated: event.blockTimestamp,
     });
 
     context.Update.set({
