@@ -162,6 +162,8 @@ type Grant {
   lastUpdated: Int!
   amount: BigInt
   isAllocated: Boolean!
+  amountAllocated: BigInt!
+  amountDistributed: BigInt!
   grantCompleted: Boolean!
   applicationApproved: Boolean!
   hasPendingMilestones: Boolean!

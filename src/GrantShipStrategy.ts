@@ -145,7 +145,7 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     metadata_id: event.params.metadata[1],
     amount: event.params.grantAmount,
     receivingAddress: event.params.receivingAddress,
-    status: GrantStatus.ApplicationSubmitted,
+    status: GameStatus.Pending,
     timestamp: event.blockTimestamp,
   });
   context.Grant.set({
@@ -156,6 +156,8 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     status: GrantStatus.ApplicationSubmitted,
     lastUpdated: event.blockTimestamp,
     amount: event.params.grantAmount,
+    amountAllocated: 0n,
+    amountDistributed: 0n,
     isAllocated: false,
     grantCompleted: false,
     applicationApproved: false,
@@ -451,6 +453,7 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     isAllocated: true,
+    amountAllocated: event.params.amount,
     lastUpdated: event.blockTimestamp,
   });
 
@@ -529,6 +532,11 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
       hasPendingMilestones: true,
       hasRejectedMilestones,
       lastUpdated: event.blockTimestamp,
+    });
+
+    context.Milestone.set({
+      ...milestone,
+      status: GameStatus.Pending,
     });
 
     context.MilestoneSet.set({
@@ -765,6 +773,17 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     context.log.error(`Grant, Ship, or Project not found: ${grantId}`);
     return;
   }
+  context.GrantShip.set({
+    ...ship,
+    totalDistributed: ship.totalDistributed + event.params.amount,
+    totalAllocated: ship.totalAllocated - event.params.amount,
+  });
+
+  context.Grant.set({
+    ...grant,
+    amountDistributed: grant.amountDistributed + event.params.amount,
+    lastUpdated: event.blockTimestamp,
+  });
 
   context.Update.set({
     id: `${event.params.amount}:grant-update-${event.transactionHash}-${event.logIndex}`,

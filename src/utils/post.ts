@@ -92,11 +92,13 @@ const invokeProjectAction = ({
       context.Grant.set({
         id: grantId,
         project_id: projectId,
-        ship_id: event.srcAddress,
+        ship_id: ship.id,
         gameManager_id: ship.gameManager_id || 'NOT_FOUND',
         lastUpdated: event.blockTimestamp,
         amount: undefined,
         status: GrantStatus.ProjectInitiated,
+        amountAllocated: 0n,
+        amountDistributed: 0n,
         isAllocated: false,
         grantCompleted: false,
         hasPendingMilestones: false,
@@ -148,6 +150,56 @@ const invokeShipAction = ({
       customApplication_id: event.params.content[1],
     });
     addTransaction(event, context.Transaction.set);
+  } else if (action === 'SHIP_INVITE') {
+    const [, , projectId] = event.params.tag.split(':');
+    const grantId = _grantId({
+      projectId: projectId,
+      shipSrc: event.srcAddress,
+    });
+
+    const grant = context.Grant.get(grantId);
+
+    context.Update.set({
+      id: `grant-update-${event.transactionHash}`,
+      scope: UpdateScope.Grant,
+      tag: 'grant/invite/ship',
+      playerType: Player.System,
+      domain_id: ship.gameManager_id,
+      entityAddress: 'system',
+      entityMetadata_id: undefined,
+      postedBy: event.txOrigin,
+      message: undefined,
+      content_id: undefined,
+      contentSchema: ContentSchema.BasicUpdate,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: grantId,
+    });
+
+    if (!grant) {
+      context.Grant.set({
+        id: grantId,
+        project_id: projectId,
+        ship_id: ship.id,
+        gameManager_id: ship.gameManager_id || 'NOT_FOUND',
+        lastUpdated: event.blockTimestamp,
+        amount: undefined,
+        status: GrantStatus.ShipInitiated,
+        amountAllocated: 0n,
+        amountDistributed: 0n,
+        isAllocated: false,
+        grantCompleted: false,
+        hasPendingMilestones: false,
+        hasRejectedMilestones: false,
+        allMilestonesApproved: false,
+        applicationApproved: false,
+        currentMilestones_id: undefined,
+        currentApplication_id: undefined,
+      });
+      addTransaction(event, context.Transaction.set);
+    }
   } else if (action === 'SHIP_GRANT_UPDATE') {
     const [, , projectId] = event.params.tag.split(':');
     const grantId = _grantId({
@@ -184,11 +236,13 @@ const invokeShipAction = ({
       context.Grant.set({
         id: grantId,
         project_id: projectId,
-        ship_id: event.srcAddress,
+        ship_id: ship.id,
         gameManager_id: ship.gameManager_id || 'NOT_FOUND',
         lastUpdated: event.blockTimestamp,
         amount: undefined,
         status: GrantStatus.ShipInitiated,
+        amountAllocated: 0n,
+        amountDistributed: 0n,
         isAllocated: false,
         grantCompleted: false,
         hasPendingMilestones: false,
