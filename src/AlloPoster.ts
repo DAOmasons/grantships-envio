@@ -80,7 +80,6 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
           setMetadata: context.RawMetadata.set,
           internalLink: `/post/${postId}`,
         });
-
         return;
       }
     }

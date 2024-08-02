@@ -7,7 +7,7 @@ import {
   UpdateScope,
 } from './utils/constants';
 import { addTransaction } from './utils/sync';
-import { addFeedCard } from './utils/feed';
+import { addFeedCard, inWeiMarker } from './utils/feed';
 import { CHAIN } from './utils/network';
 
 GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
@@ -66,6 +66,24 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
   });
 
   addTransaction(event, context.Transaction.set);
+
+  addFeedCard({
+    message: `${grantShip.name} submitted a Grant Ship application`,
+    tag: 'ship-submit-application',
+    domain: event.srcAddress,
+    event,
+    subject: {
+      id: grantShip.id,
+      playerType: Player.Ship,
+      name: grantShip.name,
+      pointer: grantShip.profileMetadata_id,
+    },
+    setCard: context.FeedCard.set,
+    setEntity: context.FeedItemEntity.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `${`/ship/${grantShip.id}`}`,
+  });
 });
 
 GameManagerStrategyContract.RoundCreated.loader(({ event, context }) => {
@@ -163,6 +181,24 @@ GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
     isAwaitingApproval: false,
     approvedTime: event.blockTimestamp,
     applicationReviewReason_id: event.params.reason[1],
+  });
+
+  addFeedCard({
+    message: `Grant Ship launched! ${ship.name} has been approved to run a grant ship!`,
+    tag: 'ship-launched',
+    domain: event.srcAddress,
+    event,
+    subject: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+      pointer: ship.profileMetadata_id,
+    },
+    setCard: context.FeedCard.set,
+    setEntity: context.FeedItemEntity.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `${`/ship/${ship.id}`}`,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -274,6 +310,24 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
       currentRound.totalDistributedAmount + event.params.amount,
   });
 
+  addFeedCard({
+    message: `${ship.name} has received ${inWeiMarker(event.params.amount)} for the next round!`,
+    tag: 'ship-funded',
+    domain: event.srcAddress,
+    event,
+    subject: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+      pointer: ship.profileMetadata_id,
+    },
+    setCard: context.FeedCard.set,
+    setEntity: context.FeedItemEntity.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `${`/ship/${ship.id}`}`,
+  });
+
   addTransaction(event, context.Transaction.set);
 });
 
@@ -307,6 +361,23 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
     });
 
     addTransaction(event, context.Transaction.set);
+
+    addFeedCard({
+      message: `Game Start! Funding round has begun!`,
+      tag: 'gm-initialized',
+      domain: event.srcAddress,
+      event,
+      subject: {
+        id: event.srcAddress,
+        playerType: Player.GameFacilitator,
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      setCard: context.FeedCard.set,
+      setEntity: context.FeedItemEntity.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+    });
   } else {
     context.GameRound.set({
       ...currentRound,
@@ -318,6 +389,23 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
     context.GameManager.set({
       ...gameManager,
       currentRound_id: `${event.srcAddress}-${event.params.gameIndex}`,
+    });
+
+    addFeedCard({
+      message: `Game Complete! Funding round is over. Stay tuned for the voting round.`,
+      tag: 'gm-initialized',
+      domain: event.srcAddress,
+      event,
+      subject: {
+        id: event.srcAddress,
+        playerType: Player.GameFacilitator,
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      setCard: context.FeedCard.set,
+      setEntity: context.FeedItemEntity.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
     });
 
     addTransaction(event, context.Transaction.set);
@@ -379,12 +467,34 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       postDecorator: PostDecorator.Update,
       message: undefined,
       postedBy: event.txOrigin || 'Unknown',
-      contentSchema: ContentSchema.BasicUpdate,
+      contentSchema: ContentSchema.RichText,
       timestamp: event.blockTimestamp,
       postBlockNumber: event.blockNumber,
       chainId: event.chainId,
       entityMetadata_id: undefined,
       hostEntityId: event.srcAddress,
+    });
+
+    addFeedCard({
+      message: undefined,
+      tag: 'facilitator/post',
+      domain: event.srcAddress,
+      event,
+      richTextContent: {
+        protocol: event.params.content[0],
+        pointer: event.params.content[1],
+      },
+      subject: {
+        id: event.srcAddress,
+        playerType: Player.GameFacilitator,
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      setCard: context.FeedCard.set,
+      setEntity: context.FeedItemEntity.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/post/${event.transactionHash}`,
     });
 
     addTransaction(event, context.Transaction.set);

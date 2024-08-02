@@ -24,7 +24,7 @@ const invokeFacilitatorAction = ({
   context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
   contractTag: string;
 }) => {
-  context.log.error(`Action not found: In Facilitator Action`);
+  context.log.warn(`Action not found: In Facilitator Action`);
 };
 
 const invokeProjectAction = ({
@@ -111,7 +111,7 @@ const invokeProjectAction = ({
     }
     addTransaction(event, context.Transaction.set);
   } else {
-    context.log.error(`In Project: Action not found: ${action}`);
+    context.log.warn(`In Project: Action not found: ${action}`);
   }
 };
 
@@ -324,7 +324,7 @@ const invokeShipAction = ({
 
     addTransaction(event, context.Transaction.set);
   } else {
-    context.log.error(`Action not found: ${action}`);
+    context.log.warn(`Action not found: ${action}`);
   }
 };
 
@@ -359,6 +359,6 @@ export const invokeActionByRoleType = ({
   } else if (isProjectPosting) {
     invokeProjectAction({ event, context, contractTag, ship });
   } else {
-    context.log.error(`Role not found: ${role}`);
+    context.log.warn(`Role not found: ${role}`);
   }
 };
