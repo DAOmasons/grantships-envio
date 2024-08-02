@@ -56,15 +56,17 @@ export enum ContestStatus {
 
 export enum GrantStatus {
   None,
+  ProjectInitiated,
+  ShipInitiated,
   ApplicationSubmitted,
   ApplicationRejected,
   ApplicationApproved,
   MilestonesSubmitted,
   MilestonesRejected,
   MilestonesApproved,
-  Allocated,
   FacilitatorRejected,
-  Building,
+  Allocated,
+  AllMilestonesComplete,
   Completed,
 }
 

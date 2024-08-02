@@ -162,8 +162,13 @@ type Grant {
   lastUpdated: Int!
   amount: BigInt
   isAllocated: Boolean!
+  amountAllocated: BigInt!
+  amountDistributed: BigInt!
   grantCompleted: Boolean!
   applicationApproved: Boolean!
+  hasPendingMilestones: Boolean!
+  hasRejectedMilestones: Boolean!
+  allMilestonesApproved: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
   currentMilestones: MilestoneSet
   applications: [Application!]! @derivedFrom(field: "grant")
@@ -188,6 +193,9 @@ type MilestoneSet {
   timestamp: Int!
   status: Int!
   milestoneLength: Int!
+  milestonesCompleted: Int!
+  milestonesRejected: Int!
+  milestonesPending: Int!
   milestones: [Milestone!]! @derivedFrom(field: "milestoneSet")
 }
 
