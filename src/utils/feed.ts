@@ -25,7 +25,7 @@ type Embed = {
 };
 
 export const feedCardId = (tag: string, event: eventLog<unknown>) =>
-  `${tag}-${event.transactionHash}-${event.transactionIndex}`;
+  `${tag}-${event.transactionHash}-${event.logIndex}`;
 
 export const addFeedCard = ({
   event,
