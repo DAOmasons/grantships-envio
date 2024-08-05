@@ -23,9 +23,9 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
         return;
       }
 
-      const [postType, , postIndex] = postId.split('-');
+      const [postType] = postId.split('-');
 
-      if (!postType || !postIndex) {
+      if (!postType) {
         return;
       }
 
@@ -36,7 +36,7 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
           pointer: event.params._2[1],
         });
 
-        const postId = `project-post-${event.params.anchor}-${postIndex}`;
+        const postId = `project-post-${event.transactionHash}-${event.logIndex}`;
 
         context.Update.set({
           id: postId,
