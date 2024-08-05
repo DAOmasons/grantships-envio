@@ -148,7 +148,7 @@ networks:
   - name: GameManagerFactory
     address: 0x012Ab5AC3adff0958cEc0317b8307D14A39a62A6
   - name: GrantShipFactory
-    address: 0xe3c270Bf363f3F55e8Fd488c2728227AeF436243
+    address: 0x482a44043C67B92a69FAa47C5DA35453D88D140a
   - name: GameManagerStrategy
     address:
   - name: GrantShipStrategy
