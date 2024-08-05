@@ -14,6 +14,7 @@ import {
   UpdateScope,
 } from './constants';
 import { addTransaction } from './sync';
+import { addFeedCard } from './feed';
 
 const invokeFacilitatorAction = ({
   event,
@@ -24,7 +25,7 @@ const invokeFacilitatorAction = ({
   context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
   contractTag: string;
 }) => {
-  context.log.error(`Action not found: In Facilitator Action`);
+  context.log.warn(`Action not found: In Facilitator Action`);
 };
 
 const invokeProjectAction = ({
@@ -111,7 +112,7 @@ const invokeProjectAction = ({
     }
     addTransaction(event, context.Transaction.set);
   } else {
-    context.log.error(`In Project: Action not found: ${action}`);
+    context.log.warn(`In Project: Action not found: ${action}`);
   }
 };
 
@@ -137,7 +138,9 @@ const invokeShipAction = ({
     context.GrantShip.set({
       ...ship,
       beaconMessage_id: event.params.content[1],
+      beaconLastUpdated: event.blockTimestamp,
     });
+
     addTransaction(event, context.Transaction.set);
   } else if (action === 'SHIP_APPLICATION') {
     context.RawMetadata.set({
@@ -158,6 +161,12 @@ const invokeShipAction = ({
     });
 
     const grant = context.Grant.get(grantId);
+    const project = context.Project.get(projectId);
+
+    if (!project) {
+      context.log.error(`Project not found: ${projectId}`);
+      return;
+    }
 
     context.Update.set({
       id: `grant-update-${event.transactionHash}`,
@@ -198,6 +207,35 @@ const invokeShipAction = ({
         currentMilestones_id: undefined,
         currentApplication_id: undefined,
       });
+
+      addFeedCard({
+        message: `${ship.name} has invited ${project.name}'s to apply for a grant.`,
+        tag: 'grant/invite',
+        domain: ship.gameManager_id || '',
+        subject: {
+          id: ship.id,
+          playerType: Player.Ship,
+          name: ship.name,
+          pointer: ship.profileMetadata_id,
+        },
+        object: {
+          id: project.id,
+          playerType: Player.Project,
+          name: project.name,
+        },
+        embed: {
+          protocol: event.params.content[0],
+          pointer: event.params.content[1],
+          key: 'text',
+        },
+        setEntity: context.FeedItemEntity.set,
+        event,
+        setCard: context.FeedCard.set,
+        setEmbed: context.FeedItemEmbed.set,
+        setMetadata: context.RawMetadata.set,
+        internalLink: `/grant/${grantId}`,
+      });
+
       addTransaction(event, context.Transaction.set);
     }
   } else if (action === 'SHIP_GRANT_UPDATE') {
@@ -261,8 +299,13 @@ const invokeShipAction = ({
       shipSrc: event.srcAddress,
     });
     const grant = context.Grant.get(grantId);
+    const project = context.Project.get(projectId);
     if (!grant) {
       context.log.error(`Grant not found: ${_grantId}`);
+      return;
+    }
+    if (!project) {
+      context.log.error(`Project not found: ${projectId}`);
       return;
     }
 
@@ -322,9 +365,37 @@ const invokeShipAction = ({
       hostEntityId: grant.id,
     });
 
+    addFeedCard({
+      message: `${ship.name} ${isApproved ? 'has approved' : ' did not approve'} ${project.name}'s grant application.`,
+      tag: 'grant/review/application',
+      domain: ship.gameManager_id || '',
+      subject: {
+        id: ship.id,
+        playerType: Player.Ship,
+        name: ship.name,
+        pointer: ship.profileMetadata_id,
+      },
+      object: {
+        id: project.id,
+        playerType: Player.Project,
+        name: project.name,
+      },
+      embed: {
+        protocol: event.params.content[0],
+        pointer: event.params.content[1],
+        key: 'reason',
+      },
+      setEntity: context.FeedItemEntity.set,
+      event,
+      setCard: context.FeedCard.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/grant/${grantId}`,
+    });
+
     addTransaction(event, context.Transaction.set);
   } else {
-    context.log.error(`Action not found: ${action}`);
+    context.log.warn(`Action not found: ${action}`);
   }
 };
 
@@ -359,6 +430,6 @@ export const invokeActionByRoleType = ({
   } else if (isProjectPosting) {
     invokeProjectAction({ event, context, contractTag, ship });
   } else {
-    context.log.error(`Role not found: ${role}`);
+    context.log.warn(`Role not found: ${role}`);
   }
 };

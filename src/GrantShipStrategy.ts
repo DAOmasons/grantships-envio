@@ -14,7 +14,7 @@ import {
 } from './utils/id';
 import { invokeActionByRoleType } from './utils/post';
 import { addTransaction } from './utils/sync';
-import { inWeiMarker } from './utils/feed';
+import { addFeedCard, inWeiMarker } from './utils/feed';
 
 GrantShipStrategyContract.PoolFunded.loader(({ event, context }) => {
   context.ShipContext.load(event.srcAddress, {
@@ -42,7 +42,7 @@ GrantShipStrategyContract.PoolFunded.handler(({ event, context }) => {
     ...grantShip,
     poolFunded: true,
     balance: event.params.amount,
-    totalAvailableFunds: grantShip.totalAvailableFunds + event.params.amount,
+    totalFundsReceived: grantShip.totalFundsReceived + event.params.amount,
   });
 
   // doesn't need to be added to the transaction table
@@ -168,6 +168,29 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     currentMilestones_id: undefined,
   });
 
+  addFeedCard({
+    message: `${project.name} has submitted a grant application to ${grantShip.name}`,
+    tag: 'grant/application',
+    domain: gameManager.id,
+    subject: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+      pointer: project.metadata_id,
+    },
+    object: {
+      id: grantShip.id,
+      playerType: Player.Ship,
+      name: grantShip.name,
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}/application`,
+  });
+
   addTransaction(event, context.Transaction.set);
 });
 
@@ -178,7 +201,7 @@ GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
     loadGameManager: {},
   });
 
-  context.Project.load(event.params.recipientId, {});
+  context.Project.load(potentialProjectId || event.params.recipientId, {});
   context.Grant.load(
     _grantId({
       projectId: potentialProjectId || event.params.recipientId,
@@ -212,8 +235,9 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
   });
   const grant = context.Grant.get(grantId);
   const project = grant ? context.Grant.getProject(grant) : null;
+  const ship = grant ? context.Grant.getShip(grant) : null;
 
-  if (!grant || !project) {
+  if (!grant || !project || !ship) {
     context.log.error(`Grant, Project, or Ship not found: Grant Id ${grantId}`);
     return;
   }
@@ -273,6 +297,29 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
     status: GrantStatus.MilestonesSubmitted,
     currentMilestones_id: milestoneSetId,
     lastUpdated: event.blockTimestamp,
+  });
+
+  addFeedCard({
+    message: `${project.name} has submitted a milestone draft to ${ship.name}`,
+    tag: 'grant/application',
+    domain: ship.gameManager_id || 'NEVER',
+    subject: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+      pointer: project.metadata_id,
+    },
+    object: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}/milestones`,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -354,6 +401,34 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
     hostEntityId: grant.id,
   });
 
+  addFeedCard({
+    message: `${ship.name} ${isApproved ? 'has approved' : 'did not approve'} ${project.name}'s milestones draft`,
+    tag: 'grant/milestoneset/review',
+    domain: ship.gameManager_id || 'NEVER',
+    subject: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+      pointer: ship.profileMetadata_id,
+    },
+    object: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+    },
+    embed: {
+      key: 'reason',
+      pointer: event.params.reason[1],
+      protocol: event.params.reason[0],
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}/milestones`,
+  });
+
   addTransaction(event, context.Transaction.set);
 });
 
@@ -421,6 +496,34 @@ GrantShipStrategyContract.RecipientStatusChanged.handler(
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
+
+    addFeedCard({
+      message: `Facilitators ${isApproved ? 'have approved' : 'did not approve'} ${project.name} for allocation.`,
+      tag: 'grant/facilitator/review',
+      domain: ship.gameManager_id || 'NEVER',
+      subject: {
+        id: ship.gameManager_id || 'NEVER',
+        playerType: Player.GameFacilitator,
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      object: {
+        id: project.id,
+        playerType: Player.Project,
+        name: project.name,
+      },
+      embed: {
+        key: 'reason',
+        pointer: event.params.reason[1],
+        protocol: event.params.reason[0],
+      },
+      setEntity: context.FeedItemEntity.set,
+      event,
+      setCard: context.FeedCard.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/grant/${grantId}`,
+    });
   }
 
   // doesn't need to be added to the transaction table
@@ -475,10 +578,33 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
     contentSchema: undefined,
     content_id: undefined,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
+    timestamp: event.blockTimestamp + 1,
     postBlockNumber: event.blockNumber,
     chainId: event.chainId,
     hostEntityId: grant.id,
+  });
+
+  addFeedCard({
+    message: `${ship.name} have allocated ${inWeiMarker(event.params.amount)} to ${project.name}`,
+    tag: 'grant/allocated',
+    domain: ship.gameManager_id || 'NEVER',
+    subject: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+      pointer: ship.profileMetadata_id,
+    },
+    object: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}`,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -497,8 +623,9 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
       ? await context.Grant.getCurrentMilestones(grant)
       : null;
     const project = grant ? await context.Grant.getProject(grant) : null;
+    const ship = grant ? await context.Grant.getShip(grant) : null;
 
-    if (!grant || !currentMilestones || !project) {
+    if (!grant || !currentMilestones || !project || !ship) {
       context.log.error(
         `Grant, Current Milestones, or Project not found: ${grantId}`
       );
@@ -570,6 +697,33 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
       hostEntityId: grant.id,
     });
     addTransaction(event, context.Transaction.set);
+
+    addFeedCard({
+      message: `${project.name} has submitted Milestone ${milestone.index + 1} to ${ship.name}`,
+      tag: 'grant/milestone/submit',
+      domain: ship.gameManager_id || 'NEVER',
+      richTextContent: {
+        protocol: event.params.metadata[0],
+        pointer: event.params.metadata[1],
+      },
+      subject: {
+        id: project.id,
+        playerType: Player.Project,
+        name: project.name,
+        pointer: project.metadata_id,
+      },
+      object: {
+        id: ship.id,
+        playerType: Player.Ship,
+        name: ship.name,
+      },
+      setEntity: context.FeedItemEntity.set,
+      event,
+      setCard: context.FeedCard.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/grant/${grantId}/milestones`,
+    });
   }
 );
 
@@ -588,8 +742,9 @@ GrantShipStrategyContract.MilestoneStatusChanged.handlerAsync(
       ? await context.Grant.getCurrentMilestones(grant)
       : null;
     const ship = grant ? await context.Grant.getShip(grant) : null;
+    const project = grant ? await context.Grant.getProject(grant) : null;
 
-    if (!grant || !currentMilestones || !ship) {
+    if (!grant || !currentMilestones || !ship || !project) {
       context.log.error(`Grant or Current Milestones not found: ${grantId}`);
       return;
     }
@@ -654,6 +809,7 @@ GrantShipStrategyContract.MilestoneStatusChanged.handlerAsync(
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
+
     // doesn't need to be added to the transaction table
   }
 );
@@ -746,6 +902,29 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
       hostEntityId: grant.id,
     });
 
+    addFeedCard({
+      message: `${ship.name} did not approve ${project.name}'s milestone`,
+      tag: 'grant/milestone/reject',
+      domain: ship.gameManager_id || 'NEVER',
+      subject: {
+        id: ship.id,
+        playerType: Player.Ship,
+        name: ship.name,
+        pointer: ship.profileMetadata_id,
+      },
+      object: {
+        id: project.id,
+        playerType: Player.Project,
+        name: project.name,
+      },
+      setEntity: context.FeedItemEntity.set,
+      event,
+      setCard: context.FeedCard.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/grant/${grantId}/milestones`,
+    });
+
     addTransaction(event, context.Transaction.set);
   }
 );
@@ -777,6 +956,7 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     ...ship,
     totalDistributed: ship.totalDistributed + event.params.amount,
     totalAllocated: ship.totalAllocated - event.params.amount,
+    balance: ship.balance - event.params.amount,
   });
 
   context.Grant.set({
@@ -798,10 +978,33 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     contentSchema: undefined,
     content_id: undefined,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
+    timestamp: event.blockTimestamp + 1,
     postBlockNumber: event.blockNumber,
     chainId: event.chainId,
     hostEntityId: grant.id,
+  });
+
+  addFeedCard({
+    message: `${ship.name} distributed ${inWeiMarker(event.params.amount)} to ${project.name}`,
+    tag: 'grant/distributed',
+    domain: ship.gameManager_id || 'NEVER',
+    subject: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+      pointer: ship.profileMetadata_id,
+    },
+    object: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}`,
   });
 
   addTransaction(event, context.Transaction.set);
@@ -813,7 +1016,10 @@ GrantShipStrategyContract.GrantComplete.loader(({ event, context }) => {
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
     }),
-    {}
+    {
+      loadProject: {},
+      loadShip: {},
+    }
   );
 });
 
@@ -824,8 +1030,10 @@ GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
   });
 
   const grant = context.Grant.get(grantId);
+  const project = grant ? context.Grant.getProject(grant) : null;
+  const ship = grant ? context.Grant.getShip(grant) : null;
 
-  if (!grant) {
+  if (!grant || !project || !ship) {
     context.log.error(`Grant not found: ${grantId}`);
     return;
   }
@@ -853,6 +1061,29 @@ GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
     postBlockNumber: event.blockNumber,
     chainId: event.chainId,
     hostEntityId: grant.id,
+  });
+
+  addFeedCard({
+    message: `${project.name} and ${ship.name} have completed their grant!`,
+    tag: 'grant/complete',
+    domain: ship.gameManager_id || 'NEVER',
+    subject: {
+      id: project.id,
+      playerType: Player.Project,
+      name: project.name,
+      pointer: project.metadata_id,
+    },
+    object: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+    },
+    setEntity: context.FeedItemEntity.set,
+    event,
+    setCard: context.FeedCard.set,
+    setEmbed: context.FeedItemEmbed.set,
+    setMetadata: context.RawMetadata.set,
+    internalLink: `/grant/${grantId}`,
   });
 
   addTransaction(event, context.Transaction.set);

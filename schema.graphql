@@ -119,7 +119,7 @@ type GrantShip @entity {
   poolFunded: Boolean!
   balance: BigInt!
   shipAllocation: BigInt!
-  totalAvailableFunds: BigInt!
+  totalFundsReceived: BigInt!
   totalRoundAmount: BigInt!
   totalAllocated: BigInt!
   totalDistributed: BigInt!
@@ -150,6 +150,7 @@ type GrantShip @entity {
   # # Game Manager => Distributed
   isDistributed: Boolean
   beaconMessage: RawMetadata
+  beaconLastUpdated: Int
   customApplication: RawMetadata
 }
 

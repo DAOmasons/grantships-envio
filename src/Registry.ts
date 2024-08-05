@@ -61,7 +61,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       alloProfileMembers_id: event.params.profileId,
       balance: BigInt(0),
       shipAllocation: BigInt(0),
-      totalAvailableFunds: BigInt(0),
+      totalFundsReceived: BigInt(0),
       totalRoundAmount: BigInt(0),
       totalAllocated: BigInt(0),
       totalDistributed: BigInt(0),
@@ -85,6 +85,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       isDistributed: undefined,
       beaconMessage_id: undefined,
       customApplication_id: undefined,
+      beaconLastUpdated: undefined,
     });
 
     context.ProfileIdToAnchor.set({
