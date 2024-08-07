@@ -56,7 +56,7 @@ GrantShipStrategyContract.GrantShipInitialized.loader(({ event, context }) => {
 
 GrantShipStrategyContract.GrantShipInitialized.handler(({ event, context }) => {
   const shipContext = context.ShipContext.get(event.srcAddress);
-
+  console.log('test');
   if (!shipContext) {
     context.log.error(
       `ShipContext not found: Ship address ${event.srcAddress}`

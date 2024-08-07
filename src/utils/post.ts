@@ -15,6 +15,7 @@ import {
 } from './constants';
 import { addTransaction } from './sync';
 import { addFeedCard } from './feed';
+import { isAddress } from 'viem';
 
 const invokeFacilitatorAction = ({
   event,
@@ -394,6 +395,67 @@ const invokeShipAction = ({
     });
 
     addTransaction(event, context.Transaction.set);
+  } else if (action === 'SHIP_POST') {
+    const [, , possibleDomainAddress] = event.params.tag.split(':');
+
+    context.RawMetadata.set({
+      id: event.params.content[1],
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+
+    const postId = `ship-post-${event.transactionHash}-${event.logIndex}`;
+
+    const isCorrectDomain =
+      isAddress(possibleDomainAddress) || possibleDomainAddress === 'Global';
+
+    if (!isCorrectDomain) {
+      context.log.warn(`Invalid domain address: ${possibleDomainAddress}`);
+      return;
+    }
+
+    context.Update.set({
+      id: postId,
+      scope: UpdateScope.Ship,
+      tag: 'ship/post',
+      playerType: Player.Ship,
+      domain_id: possibleDomainAddress,
+      entityAddress: ship.id,
+      entityMetadata_id: ship.profileMetadata_id,
+      postedBy: event.txOrigin,
+      message: undefined,
+      content_id: event.params.content[1],
+      contentSchema: ContentSchema.RichText,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: ship.id,
+    });
+
+    addTransaction(event, context.Transaction.set);
+
+    addFeedCard({
+      message: undefined,
+      tag: 'ship/post',
+      domain: possibleDomainAddress,
+      event,
+      richTextContent: {
+        protocol: event.params.content[0],
+        pointer: event.params.content[1],
+      },
+      subject: {
+        id: ship.id,
+        playerType: Player.Ship,
+        name: ship.name,
+        pointer: ship.profileMetadata_id,
+      },
+      setCard: context.FeedCard.set,
+      setEntity: context.FeedItemEntity.set,
+      setEmbed: context.FeedItemEmbed.set,
+      setMetadata: context.RawMetadata.set,
+      internalLink: `/post/${postId}`,
+    });
   } else {
     context.log.warn(`Action not found: ${action}`);
   }
