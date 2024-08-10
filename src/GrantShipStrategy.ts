@@ -1042,6 +1042,7 @@ GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
     ...grant,
     grantCompleted: true,
     lastUpdated: event.blockTimestamp,
+    status: GrantStatus.Completed,
   });
 
   context.Update.set({
