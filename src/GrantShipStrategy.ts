@@ -563,6 +563,7 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
   context.GrantShip.set({
     ...ship,
     totalAllocated: ship.totalAllocated + event.params.amount,
+    balance: ship.balance - event.params.amount,
   });
 
   context.Update.set({
@@ -956,7 +957,6 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     ...ship,
     totalDistributed: ship.totalDistributed + event.params.amount,
     totalAllocated: ship.totalAllocated - event.params.amount,
-    balance: ship.balance - event.params.amount,
   });
 
   context.Grant.set({
