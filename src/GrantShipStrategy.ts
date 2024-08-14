@@ -556,6 +556,7 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     isAllocated: true,
+
     amountAllocated: event.params.amount,
     lastUpdated: event.blockTimestamp,
   });
