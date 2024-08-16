@@ -2,7 +2,6 @@ import {
   GrantShipStrategyContract_UpdatePostedEvent_eventArgs,
   GrantShipStrategyContract_UpdatePostedEvent_handlerContext,
   eventLog,
-  grantEntity,
   grantShipEntity,
 } from 'generated';
 import { _applicationId, _grantId } from './id';
@@ -21,12 +20,66 @@ const invokeFacilitatorAction = ({
   event,
   context,
   contractTag,
+  ship,
 }: {
   event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
   context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
   contractTag: string;
+  ship?: grantShipEntity;
 }) => {
-  context.log.warn(`Action not found: In Facilitator Action`);
+  const [, action, projectId] = contractTag.split(':');
+
+  if (!projectId) {
+    context.log.warn(`Project ID not found: ${projectId}`);
+    return;
+  }
+
+  const grantId = _grantId({
+    projectId,
+    shipSrc: event.srcAddress,
+  });
+
+  if (!ship) {
+    context.log.warn('Ship not found in Facilitator Action');
+    return;
+  }
+
+  if (!grantId) {
+    context.log.warn('Grant Id not found in Facilitator Action');
+    return;
+  }
+
+  if (action === 'FACILITATOR_GRANT_UPDATE') {
+    context.RawMetadata.set({
+      id: event.params.content[1],
+      protocol: event.params.content[0],
+      pointer: event.params.content[1],
+    });
+
+    context.Update.set({
+      id: `facilitator-update-${event.transactionHash}`,
+      scope: UpdateScope.Grant,
+      tag: 'grant/update/facilitator',
+      playerType: Player.GameFacilitator,
+      domain_id: ship.gameManager_id,
+      entityAddress: 'facilitators',
+      entityMetadata_id: undefined,
+      postedBy: event.txOrigin,
+      message: undefined,
+      content_id: event.params.content[1],
+      contentSchema: ContentSchema.RichText,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: grantId,
+    });
+
+    addTransaction(event, context.Transaction.set);
+    return;
+  }
+
+  context.log.warn(`Action not found: In Facilitator Action: ${action}`);
 };
 
 const invokeProjectAction = ({
@@ -486,7 +539,7 @@ export const invokeActionByRoleType = ({
   const isProjectPosting = role === '0';
 
   if (isFacilitatorPosting) {
-    invokeFacilitatorAction({ event, context, contractTag });
+    invokeFacilitatorAction({ event, context, contractTag, ship });
   } else if (isShipOperatorPosting) {
     invokeShipAction({ event, context, contractTag, ship });
   } else if (isProjectPosting) {

@@ -36,7 +36,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       setEntity: context.FeedItemEntity.set,
       setEmbed: context.FeedItemEmbed.set,
       setMetadata: context.RawMetadata.set,
-      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/tx/${event.transactionIndex}`,
+      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/address/${event.srcAddress}`,
     });
   }
 );
@@ -449,22 +449,26 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
 
 GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
 GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
-  if (event.params.tag.startsWith('0xb02b7f97')) {
+  const [, action] = event.params.tag.split(':');
+
+  if (action === 'FACILITATOR_POST_UPDATE') {
     context.RawMetadata.set({
       id: event.params.tag,
       protocol: event.params.content[0],
       pointer: event.params.content[1],
     });
 
+    const postId = `facilitator-post-${event.transactionHash}-${event.logIndex}`;
+
     context.Update.set({
-      id: event.transactionHash,
-      tag: event.params.tag,
+      id: postId,
+      tag: 'facilitator/post',
       scope: UpdateScope.Game,
       domain_id: event.srcAddress,
       playerType: Player.GameFacilitator,
       entityAddress: event.srcAddress,
       content_id: event.params.content[1],
-      postDecorator: PostDecorator.Update,
+      postDecorator: undefined,
       message: undefined,
       postedBy: event.txOrigin || 'Unknown',
       contentSchema: ContentSchema.RichText,
@@ -494,7 +498,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       setEntity: context.FeedItemEntity.set,
       setEmbed: context.FeedItemEmbed.set,
       setMetadata: context.RawMetadata.set,
-      internalLink: `/post/${event.transactionHash}`,
+      internalLink: `/post/${postId}`,
     });
 
     addTransaction(event, context.Transaction.set);
