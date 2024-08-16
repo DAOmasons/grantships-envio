@@ -29,6 +29,11 @@ const invokeFacilitatorAction = ({
 }) => {
   const [, action, projectId] = contractTag.split(':');
 
+  if (!projectId) {
+    context.log.warn(`Project ID not found: ${projectId}`);
+    return;
+  }
+
   const grantId = _grantId({
     projectId,
     shipSrc: event.srcAddress,
@@ -71,9 +76,10 @@ const invokeFacilitatorAction = ({
     });
 
     addTransaction(event, context.Transaction.set);
+    return;
   }
 
-  context.log.warn(`Action not found: In Facilitator Action`);
+  context.log.warn(`Action not found: In Facilitator Action: ${action}`);
 };
 
 const invokeProjectAction = ({

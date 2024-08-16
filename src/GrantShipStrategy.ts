@@ -56,7 +56,6 @@ GrantShipStrategyContract.GrantShipInitialized.loader(({ event, context }) => {
 
 GrantShipStrategyContract.GrantShipInitialized.handler(({ event, context }) => {
   const shipContext = context.ShipContext.get(event.srcAddress);
-  console.log('test');
   if (!shipContext) {
     context.log.error(
       `ShipContext not found: Ship address ${event.srcAddress}`
@@ -195,6 +194,7 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
 });
 
 GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
+  console.log('test');
   const [, , potentialProjectId] = event.params.tag.split(':');
   context.ShipContext.load(event.srcAddress, {
     loadGrantShip: {},
@@ -556,7 +556,6 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     isAllocated: true,
-
     amountAllocated: event.params.amount,
     lastUpdated: event.blockTimestamp,
   });

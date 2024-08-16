@@ -449,7 +449,9 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
 
 GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
 GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
-  if (event.params.tag.startsWith('0xb02b7f97')) {
+  const [, action] = event.params.tag.split(':');
+
+  if (action === 'FACILITATOR_POST_UPDATE') {
     context.RawMetadata.set({
       id: event.params.tag,
       protocol: event.params.content[0],
@@ -457,14 +459,14 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
     });
 
     context.Update.set({
-      id: event.transactionHash,
-      tag: event.params.tag,
+      id: `/post/${event.transactionHash}`,
+      tag: 'facilitator/post',
       scope: UpdateScope.Game,
       domain_id: event.srcAddress,
       playerType: Player.GameFacilitator,
       entityAddress: event.srcAddress,
       content_id: event.params.content[1],
-      postDecorator: PostDecorator.Update,
+      postDecorator: undefined,
       message: undefined,
       postedBy: event.txOrigin || 'Unknown',
       contentSchema: ContentSchema.RichText,
