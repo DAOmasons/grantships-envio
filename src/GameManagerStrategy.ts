@@ -36,7 +36,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       setEntity: context.FeedItemEntity.set,
       setEmbed: context.FeedItemEmbed.set,
       setMetadata: context.RawMetadata.set,
-      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/tx/${event.transactionIndex}`,
+      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/address/${event.srcAddress}`,
     });
   }
 );
@@ -458,8 +458,10 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       pointer: event.params.content[1],
     });
 
+    const postId = `facilitator-post-${event.transactionHash}-${event.logIndex}`;
+
     context.Update.set({
-      id: `/post/${event.transactionHash}`,
+      id: postId,
       tag: 'facilitator/post',
       scope: UpdateScope.Game,
       domain_id: event.srcAddress,
@@ -496,7 +498,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       setEntity: context.FeedItemEntity.set,
       setEmbed: context.FeedItemEmbed.set,
       setMetadata: context.RawMetadata.set,
-      internalLink: `/post/${event.transactionHash}`,
+      internalLink: `/post/${postId}`,
     });
 
     addTransaction(event, context.Transaction.set);
