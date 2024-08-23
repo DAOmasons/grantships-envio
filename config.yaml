@@ -107,6 +107,13 @@ contracts:
     - event: ContestInitialized(address votesModule, address pointsModule, address choicesModule, address executionModule, bool isContinuous, bool isRetractable, uint8 status)
       isAsync: true
     - event: ContestStatusChanged(uint8 status)
+  - name: ScaffoldDaoShaman
+    handler: src/ScaffoldDaoShaman.ts
+    events:  
+    - event: Initialized((uint8, uint256)[], address dao, address hats)
+    - event: BadgeSaved(uint256 badgeId, string name, (uint256, string) metadata, uint256 amount, bool isVotingToken, bool hasFixedAmount, bool isSlash)
+    - event: BadgeRemoved(uint256 badgeId)
+    - event: BadgeAssigned(uint256 badgeId, address recipient, uint256 amount, (uint256, string) metadata)
 networks:
 - id: 421614 # Arbitrum Sepolia
   start_block: 39353224
@@ -139,6 +146,8 @@ networks:
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
   - name: AlloPoster
     address: 0x168752edda2ca12e361b0c6a60d958c25818ec9b
+  - name: ScaffoldDaoShaman
+    address: 0x920fe0443690c7eb7c9058b6d8abd643aad1ab35
 - id: 42161 # Arbitrum One
   start_block: 195499276
   end_block: null
@@ -169,6 +178,8 @@ networks:
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
   - name: AlloPoster
     address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
+  - name: ScaffoldDaoShaman
+    address: 0x920fe0443690c7eb7c9058b6d8abd643aad1ab35
     
 
   
