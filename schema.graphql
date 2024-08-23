@@ -459,6 +459,7 @@ type ScaffoldShaman {
 
 type BadgeTemplate {
   id: ID!
+  badgeId: BigInt!
   name: String!
   metadata: RawMetadata!
   amount: BigInt!

@@ -49,13 +49,62 @@ ScaffoldDaoShamanContract.Initialized.handler(({ event, context }) => {
   });
 });
 
-ScaffoldDaoShamanContract.BadgeSaved.loader(({ event }) => {});
+ScaffoldDaoShamanContract.BadgeSaved.loader(({ event, context }) => {
+  //   context.BadgeTemplate.load(`${event.srcAddress}-${event.params.badgeId}`, {});
+  context.ScaffoldShaman.load(event.srcAddress, {});
+});
 
-ScaffoldDaoShamanContract.BadgeSaved.handler(({ event, context }) => {});
+ScaffoldDaoShamanContract.BadgeSaved.handler(({ event, context }) => {
+  const shaman = context.ScaffoldShaman.get(event.srcAddress);
 
-ScaffoldDaoShamanContract.BadgeRemoved.loader(({ event }) => {});
+  if (!shaman) {
+    context.log.error(
+      `Scaffold Shaman not found for address ${event.srcAddress}`
+    );
+    return;
+  }
 
-ScaffoldDaoShamanContract.BadgeRemoved.handler(({ event, context }) => {});
+  context.RawMetadata.set({
+    id: event.params.metadata[1],
+    protocol: event.params.metadata[0],
+    pointer: event.params.metadata[1],
+  });
+
+  context.BadgeTemplate.set({
+    id: `${event.srcAddress}-${event.params.badgeId}`,
+    badgeId: event.params.badgeId,
+    name: event.params.name,
+    metadata_id: event.params.metadata[1],
+    amount: event.params.amount,
+    isVotingToken: event.params.isVotingToken,
+    hasFixedAmount: event.params.hasFixedAmount,
+    isSlash: event.params.isSlash,
+    shaman_id: event.srcAddress,
+    exists: true,
+    dao: shaman.dao,
+  });
+});
+
+ScaffoldDaoShamanContract.BadgeRemoved.loader(({ event, context }) => {
+  context.BadgeTemplate.load(`${event.srcAddress}-${event.params.badgeId}`, {});
+});
+
+ScaffoldDaoShamanContract.BadgeRemoved.handler(({ event, context }) => {
+  const badge = context.BadgeTemplate.get(
+    `${event.srcAddress}-${event.params.badgeId}`
+  );
+  if (!badge) {
+    context.log.error(
+      `Badge not found for address ${event.srcAddress} Badge id ${event.params.badgeId}`
+    );
+    return;
+  }
+
+  context.BadgeTemplate.set({
+    ...badge,
+    exists: false,
+  });
+});
 
 ScaffoldDaoShamanContract.BadgeAssigned.loader(({ event }) => {});
 
