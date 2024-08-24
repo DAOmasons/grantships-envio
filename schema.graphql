@@ -447,6 +447,14 @@ type Gate {
   hatId: BigInt!
 }
 
+type DAOToken {
+  id: ID!
+  address: String!
+  symbol: String!
+  shaman: ScaffoldShaman!
+  dao: String!
+}
+
 type ScaffoldShaman {
   id: ID!
   address: String!
@@ -454,6 +462,8 @@ type ScaffoldShaman {
   minterGate: Gate!
   controlGate: Gate!
   dao: String!
+  lootToken: DAOToken!
+  sharesToken: DAOToken!
   templates: [BadgeTemplate!]! @derivedFrom(field: "shaman")
 }
 
@@ -484,5 +494,7 @@ type BadgeHolder {
   id: ID!
   address: String!
   dao: String!
+  shaman: ScaffoldShaman!
   badges: [Badge!]! @derivedFrom(field: "wearer")
+  badgeBalance: BigInt!
 }

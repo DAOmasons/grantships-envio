@@ -194,7 +194,6 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
 });
 
 GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
-  console.log('test');
   const [, , potentialProjectId] = event.params.tag.split(':');
   context.ShipContext.load(event.srcAddress, {
     loadGrantShip: {},
