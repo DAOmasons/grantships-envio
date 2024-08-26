@@ -181,7 +181,7 @@ networks:
   - name: AlloPoster
     address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
   - name: ScaffoldDaoShaman
-    address: 0xc8AfD6195Bf2cA462157C9608F97Ba0Da2811938
+    address: 0x70DaE101c0377bD0EaA1360bDFF367Fd853F7FF0
 
     
 

@@ -479,6 +479,7 @@ type BadgeTemplate {
   exists: Boolean!
   shaman: ScaffoldShaman!
   dao: String!
+  badges: [Badge!]! @derivedFrom(field: "template")
 }
 
 type Badge {
