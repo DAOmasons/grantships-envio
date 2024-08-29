@@ -1089,3 +1089,98 @@ GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
   addTransaction(event, context.Transaction.set);
 });
 // update
+
+GrantShipStrategyContract.GrantClawback.loader(({ event, context }) => {
+  context.Grant.load(
+    _grantId({
+      projectId: event.params.recipientId,
+      shipSrc: event.srcAddress,
+    }),
+    {
+      loadProject: {},
+      loadShip: {},
+      loadCurrentMilestones: {},
+      loadCurrentApplication: {},
+    }
+  );
+});
+
+GrantShipStrategyContract.GrantClawback.handler(({ event, context }) => {
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
+
+  const grant = context.Grant.get(grantId);
+  const project = grant ? context.Grant.getProject(grant) : null;
+  const ship = grant ? context.Grant.getShip(grant) : null;
+  const currentMilestones = grant
+    ? context.Grant.getCurrentMilestones(grant)
+    : null;
+  const currentApplication = grant
+    ? context.Grant.getCurrentApplication(grant)
+    : null;
+
+  if (!grant || !project || !ship) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
+
+  if (!currentMilestones || !currentApplication) {
+    context.log.error(
+      `Current Milestones or Application not found: ${grantId}`
+    );
+    return;
+  }
+
+  context.Application.set({
+    ...currentApplication,
+    status: GameStatus.Rejected,
+  });
+
+  context.MilestoneSet.set({
+    ...currentMilestones,
+    status: GameStatus.Rejected,
+  });
+
+  context.Grant.set({
+    ...grant,
+    amountAllocated: 0n,
+    isAllocated: false,
+    status: GrantStatus.None,
+    lastUpdated: event.blockTimestamp,
+  });
+
+  context.GrantShip.set({
+    ...ship,
+    totalAllocated: ship.totalAllocated - event.params.amountReturned,
+    balance: ship.balance + event.params.amountReturned,
+  });
+
+  context.RawMetadata.set({
+    id: event.params.metadata[1],
+    protocol: event.params.metadata[0],
+    pointer: event.params.metadata[1],
+  });
+
+  context.Update.set({
+    id: `grant-update-${event.transactionHash}`,
+    scope: UpdateScope.Grant,
+    tag: 'grant/clawback',
+    message: `Remaining Grant Funds have been clawed back`,
+    playerType: Player.System,
+    domain_id: grant.gameManager_id,
+    entityAddress: 'system',
+    entityMetadata_id: undefined,
+    postedBy: event.txOrigin,
+    contentSchema: ContentSchema.Reason,
+    content_id: event.params.metadata[1],
+    postDecorator: undefined,
+    timestamp: event.blockTimestamp,
+    postBlockNumber: event.blockNumber,
+    chainId: event.chainId,
+    hostEntityId: grant.id,
+  });
+
+  addTransaction(event, context.Transaction.set);
+});

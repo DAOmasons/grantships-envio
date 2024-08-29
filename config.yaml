@@ -53,6 +53,7 @@ contracts:
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
     - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
     - event: GrantComplete(address recipientId, uint256 amount, (uint256, string) metadata);
+    - event: GrantClawback(address recipientId, (uint256, string) metadata, uint256 amountReturned);
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 

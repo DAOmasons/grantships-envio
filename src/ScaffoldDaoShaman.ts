@@ -126,7 +126,7 @@ ScaffoldDaoShamanContract.BadgeAssigned.handler(({ event, context }) => {
   });
 
   context.Badge.set({
-    id: `${event.srcAddress}-${event.params.recipient}-${event.params.badgeId}`,
+    id: `${event.transactionHash}-${event.params.recipient}-${event.params.badgeId}`,
     template_id: `${event.srcAddress}-${event.params.badgeId}`,
     amount: event.params.amount,
     reason_id: event.params.metadata[1],
