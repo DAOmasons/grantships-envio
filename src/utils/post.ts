@@ -515,9 +515,15 @@ const invokeShipAction = ({
   } else if (action === 'REQUEST_FACILITATOR') {
     const [, , projectId] = event.params.tag.split(':');
 
-    const grant = context.Grant.get(projectId);
+    const grantId = _grantId({
+      projectId,
+      shipSrc: event.srcAddress,
+    });
+
+    const grant = context.Grant.get(grantId);
+
     if (!grant) {
-      context.log.error(`Grant not found: ${projectId}`);
+      context.log.error(`Grant not found: ${grantId}`);
       return;
     }
 
