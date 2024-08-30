@@ -53,6 +53,7 @@ contracts:
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
     - event: UpdatePosted(string tag, uint256 role, address recipientId, (uint256,string) content)
     - event: GrantComplete(address recipientId, uint256 amount, (uint256, string) metadata);
+    - event: GrantClawback(address recipientId, (uint256, string) metadata, uint256 amountReturned);
   - name: AlloPoster
     handler: src/AlloPoster.ts
     events: 
@@ -107,6 +108,15 @@ contracts:
     - event: ContestInitialized(address votesModule, address pointsModule, address choicesModule, address executionModule, bool isContinuous, bool isRetractable, uint8 status)
       isAsync: true
     - event: ContestStatusChanged(uint8 status)
+  - name: ScaffoldDaoShaman
+    handler: src/ScaffoldDaoShaman.ts
+    abi_file_path: abis/ScaffoldDaoShaman.json
+    events:  
+    - event: Initialized(address dao, address hats, address lootTokenAddress, address sharesTokenAddress, string lootTokenSymbol, string sharesTokenSymbol)
+    - event: BadgeSaved(uint256 badgeId, string name, (uint256, string) metadata, uint256 amount, bool isVotingToken, bool hasFixedAmount, bool isSlash)
+    - event: BadgeRemoved(uint256 badgeId)
+    - event: BadgeAssigned(uint256 badgeId, address recipient, uint256 amount, (uint256, string) metadata)
+    - event: GateUpdated(uint8 gateIndex, uint8 gateType, uint256 hatId)
 networks:
 - id: 421614 # Arbitrum Sepolia
   start_block: 39353224
@@ -139,6 +149,8 @@ networks:
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
   - name: AlloPoster
     address: 0x168752edda2ca12e361b0c6a60d958c25818ec9b
+  - name: ScaffoldDaoShaman
+    address: 0xc8AfD6195Bf2cA462157C9608F97Ba0Da2811938
 - id: 42161 # Arbitrum One
   start_block: 195499276
   end_block: null
@@ -169,6 +181,9 @@ networks:
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
   - name: AlloPoster
     address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
+  - name: ScaffoldDaoShaman
+    address: 0x70DaE101c0377bD0EaA1360bDFF367Fd853F7FF0
+
     
 
   

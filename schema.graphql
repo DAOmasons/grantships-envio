@@ -170,6 +170,7 @@ type Grant {
   hasPendingMilestones: Boolean!
   hasRejectedMilestones: Boolean!
   allMilestonesApproved: Boolean!
+  requestingEarlyReview: Boolean!
   milestoneDrafts: [MilestoneSet!]! @derivedFrom(field: "grant")
   currentMilestones: MilestoneSet
   applications: [Application!]! @derivedFrom(field: "grant")
@@ -438,4 +439,64 @@ type HatsPoster {
   hatsAddress: String!
   record: [Record!]! @derivedFrom(field: "hatsPoster")
   eventPosts: [EventPost!]! @derivedFrom(field: "hatsPoster")
+}
+
+type Gate {
+  id: ID!
+  gateId: Int!
+  gateType: Int!
+  hatId: BigInt!
+}
+
+type DAOToken {
+  id: ID!
+  address: String!
+  symbol: String!
+  shaman: ScaffoldShaman!
+  dao: String!
+}
+
+type ScaffoldShaman {
+  id: ID!
+  address: String!
+  managerGate: Gate!
+  minterGate: Gate!
+  controlGate: Gate!
+  dao: String!
+  lootToken: DAOToken!
+  sharesToken: DAOToken!
+  templates: [BadgeTemplate!]! @derivedFrom(field: "shaman")
+}
+
+type BadgeTemplate {
+  id: ID!
+  badgeId: BigInt!
+  name: String!
+  metadata: RawMetadata!
+  amount: BigInt!
+  isVotingToken: Boolean!
+  hasFixedAmount: Boolean!
+  isSlash: Boolean!
+  exists: Boolean!
+  shaman: ScaffoldShaman!
+  dao: String!
+  badges: [Badge!]! @derivedFrom(field: "template")
+}
+
+type Badge {
+  id: ID!
+  template: BadgeTemplate!
+  amount: BigInt!
+  reason: RawMetadata!
+  wearer: BadgeHolder!
+  dao: String!
+}
+
+type BadgeHolder {
+  id: ID!
+  address: String!
+  dao: String!
+  shaman: ScaffoldShaman!
+  badges: [Badge!]! @derivedFrom(field: "wearer")
+  badgeBalance: BigInt!
 }
