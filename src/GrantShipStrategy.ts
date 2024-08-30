@@ -163,6 +163,7 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     hasPendingMilestones: false,
     hasRejectedMilestones: false,
     allMilestonesApproved: false,
+    requestingEarlyReview: false,
     currentApplication_id: applicationId,
     currentMilestones_id: undefined,
   });
@@ -555,6 +556,7 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     isAllocated: true,
+    requestingEarlyReview: false,
     amountAllocated: event.params.amount,
     lastUpdated: event.blockTimestamp,
   });

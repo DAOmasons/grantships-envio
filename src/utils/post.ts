@@ -162,6 +162,7 @@ const invokeProjectAction = ({
         applicationApproved: false,
         currentMilestones_id: undefined,
         currentApplication_id: undefined,
+        requestingEarlyReview: false,
       });
     }
     addTransaction(event, context.Transaction.set);
@@ -260,6 +261,7 @@ const invokeShipAction = ({
         applicationApproved: false,
         currentMilestones_id: undefined,
         currentApplication_id: undefined,
+        requestingEarlyReview: false,
       });
 
       addFeedCard({
@@ -343,6 +345,7 @@ const invokeShipAction = ({
         applicationApproved: false,
         currentMilestones_id: undefined,
         currentApplication_id: undefined,
+        requestingEarlyReview: false,
       });
     }
     addTransaction(event, context.Transaction.set);
@@ -508,6 +511,38 @@ const invokeShipAction = ({
       setEmbed: context.FeedItemEmbed.set,
       setMetadata: context.RawMetadata.set,
       internalLink: `/post/${postId}`,
+    });
+  } else if (action === 'REQUEST_FACILITATOR') {
+    const [, , projectId] = event.params.tag.split(':');
+
+    const grant = context.Grant.get(projectId);
+    if (!grant) {
+      context.log.error(`Grant not found: ${projectId}`);
+      return;
+    }
+
+    context.Grant.set({
+      ...grant,
+      requestingEarlyReview: true,
+    });
+
+    context.Update.set({
+      id: `request-facilitator-${event.transactionHash}`,
+      scope: UpdateScope.Grant,
+      tag: 'grant/request-facilitator',
+      playerType: Player.Ship,
+      domain_id: grant.gameManager_id,
+      entityAddress: ship.id,
+      entityMetadata_id: ship.profileMetadata_id,
+      postedBy: event.txOrigin,
+      message: undefined,
+      content_id: undefined,
+      contentSchema: undefined,
+      postDecorator: undefined,
+      timestamp: event.blockTimestamp,
+      postBlockNumber: event.blockNumber,
+      chainId: event.chainId,
+      hostEntityId: grant.id,
     });
   } else {
     context.log.warn(`Action not found: ${action}`);
