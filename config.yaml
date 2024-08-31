@@ -102,6 +102,17 @@ contracts:
       isAsync: true
     - event: VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string))
       isAsync: true
+  - name: DualTokenTimedV0
+    handler: src/DualTokenTimedV0.ts
+    events:
+    - event: Initialized(address contest, uint256 duration, address daoToken, address contextToken);
+    - event: VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
+    - event: VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) _reason, address _votingToken);
+    - event: VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) _reason, address _votingToken);  
+  - name: DualTokenPointsV0
+    handler: src/DualTokenPointsV0.ts
+    events: 
+    - event: Initialized(address contest, address daoToken, address contextToken, uint256 votingCheckpoint);
   - name: Contest_v0_1_0
     handler: src/Contest.ts
     events:
@@ -140,6 +151,10 @@ networks:
   - name: ERC20VotesPoints
     address:
   - name: SBTBalancePoints
+    address: 
+  - name: DualTokenPointsV0
+    address:
+  - name: DualTokenTimedV0
     address:  
   - name: TimedVotes
     address:
@@ -172,6 +187,10 @@ networks:
   - name: ERC20VotesPoints
     address:
   - name: SBTBalancePoints
+    address:  
+  - name: DualTokenPointsV0
+    address:
+  - name: DualTokenTimedV0
     address:  
   - name: TimedVotes
     address:
