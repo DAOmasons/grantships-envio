@@ -39,6 +39,8 @@ export enum Module {
   EmptyExecutionModule_v0_1_1 = 'EmptyExecution_v0.1.1',
   ERC20VotesPoints_v0_1_1 = 'ERC20VotesPoints_v0.1.1',
   SBTBalancePoints_v0_1_1 = 'SBTBalancePoints_v0.1.1',
+  DualTokenPoints_v0_0_1 = 'DualTokenPoints_v0.0.1',
+  DualTokenTimed_v0_0_1 = 'DualTokenTimed_v0.0.1',
 }
 
 export enum ContestVersion {

@@ -45,6 +45,8 @@ HatsAllowListContract.Registered.handler(({ event, context }) => {
     choiceData: event.params._1[1],
     active: event.params._1[2],
     voteTally: BigInt(0),
+    contextTokenTally: BigInt(0),
+    daoTokenTally: BigInt(0),
   });
   addTransaction(event, context.Transaction.set);
 });
