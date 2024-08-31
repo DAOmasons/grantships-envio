@@ -350,6 +350,13 @@ type TVParams {
   voteDuration: BigInt!
 }
 
+type DualTokenTVParams {
+  id: ID!
+  voteDuration: BigInt!
+  daoTokenAddress: String!
+  contextTokenAddress: String!
+}
+
 type ERCPointParams {
   id: ID!
   voteTokenAddress: String!
