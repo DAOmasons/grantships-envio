@@ -107,8 +107,11 @@ contracts:
     events:
     - event: Initialized(address contest, uint256 duration, address daoToken, address contextToken);
     - event: VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
+      isAsync: true
     - event: VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) _reason, address _votingToken);
+      isAsync: true
     - event: VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) _reason, address _votingToken);  
+      isAsync: true
   - name: DualTokenPointsV0
     handler: src/DualTokenPointsV0.ts
     events: 

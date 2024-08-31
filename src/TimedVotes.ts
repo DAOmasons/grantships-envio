@@ -98,6 +98,7 @@ TimedVotesContract.VoteCast.handlerAsync(async ({ event, context }) => {
     amount: event.params.amount,
     contest_id: gsVoting.id,
     mdProtocol: event.params._3[0],
+    token: gsVoting.voteTokenAddress,
     mdPointer: event.params._3[1],
     isRetractVote: false,
   });
@@ -173,6 +174,7 @@ TimedVotesContract.VoteRetracted.handlerAsync(async ({ event, context }) => {
     voter_id: event.params.voter,
     amount: event.params.amount,
     contest_id: gsVoting.id,
+    token: gsVoting.voteTokenAddress,
     mdProtocol: event.params._3[0],
     mdPointer: event.params._3[1],
     isRetractVote: true,

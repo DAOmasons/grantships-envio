@@ -388,6 +388,7 @@ type ShipVote {
   voter: GSVoter!
   amount: BigInt!
   contest: GrantShipsVoting!
+  token: String!
   mdPointer: String!
   mdProtocol: BigInt!
   isRetractVote: Boolean!
