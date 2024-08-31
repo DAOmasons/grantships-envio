@@ -1,7 +1,12 @@
 import { Contest_v0_1_0Contract, GrantShipsVotingEntity } from 'generated';
-import { isGrantShipsVoting, isSBTVoting } from './utils/dynamicIndexing';
+import {
+  isDualTokenVoting,
+  isGrantShipsVoting,
+  isSBTVoting,
+} from './utils/dynamicIndexing';
 import { addTransaction } from './utils/sync';
 import { ContestStatus } from './utils/constants';
+import { zeroAddress } from 'viem';
 
 Contest_v0_1_0Contract.ContestInitialized.loader(({ event, context }) => {});
 
@@ -28,6 +33,11 @@ Contest_v0_1_0Contract.ContestInitialized.handlerAsync(
     const sbtBalParams = await context.SBTBalParams.get(
       event.params.pointsModule
     );
+
+    const dualTokenPointsParams = await context.DualTokenPointsParams.get(
+      event.params.pointsModule
+    );
+
     if (
       contestClone === undefined ||
       votingModule === undefined ||
@@ -140,6 +150,7 @@ Contest_v0_1_0Contract.ContestInitialized.handlerAsync(
         endTime: undefined,
         isVotingActive: false,
         isSBTVoting: false,
+        isDualToken: false,
         totalVotes: 0n,
       });
 
@@ -189,6 +200,55 @@ Contest_v0_1_0Contract.ContestInitialized.handlerAsync(
         endTime: undefined,
         isVotingActive: false,
         isSBTVoting: true,
+        isDualToken: false,
+        totalVotes: 0n,
+      });
+      addTransaction(event, context.Transaction.set);
+      return;
+    }
+
+    if (
+      isDualTokenVoting({
+        choiceModuleName: choicesModule.moduleName,
+        votesModuleName: votingModule.moduleName,
+        pointsModuleName: pointsModule.moduleName,
+        executionModuleName: executionModule.moduleName,
+        contestVersion: contestClone.contestVersion,
+      })
+    ) {
+      if (
+        halParams === undefined ||
+        tvParams === undefined ||
+        dualTokenPointsParams === undefined
+      ) {
+        if (halParams === undefined)
+          context.log.error(
+            `HALParams not found: ID ${event.params.choicesModule}`
+          );
+        if (tvParams === undefined)
+          context.log.error(
+            `TVParams not found: ID ${event.params.votesModule}`
+          );
+        if (dualTokenPointsParams === undefined)
+          context.log.error(
+            `DualTokenPointsParams not found: ID ${event.params.pointsModule}, `
+          );
+        return;
+      }
+
+      context.GrantShipsVoting.set({
+        id: event.srcAddress,
+        contest_id: contestClone.contestAddress,
+        hatId: halParams.hatId,
+        hatsAddress: halParams.hatsAddress,
+        voteTokenAddress: zeroAddress,
+        votingCheckpoint: dualTokenPointsParams.votingCheckpoint,
+        voteDuration: tvParams.voteDuration,
+        startTime: undefined,
+        endTime: undefined,
+        isVotingActive: false,
+        isSBTVoting: false,
+        isDualToken: true,
         totalVotes: 0n,
       });
       addTransaction(event, context.Transaction.set);

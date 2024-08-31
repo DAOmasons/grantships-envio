@@ -361,6 +361,13 @@ type SBTBalParams {
   voteTokenAddress: String!
 }
 
+type DualTokenPointsParams {
+  id: ID!
+  daoTokenAddress: String!
+  contextTokenAddress: String!
+  votingCheckpoint: BigInt!
+}
+
 type ShipChoice {
   id: ID!
   contest: GrantShipsVoting!
@@ -369,6 +376,9 @@ type ShipChoice {
   choiceData: Bytes!
   active: Boolean!
   voteTally: BigInt!
+  # For dual token voting
+  daoTokenTally: BigInt!
+  contextTokenTally: BigInt!
   votes: [ShipVote!]! @derivedFrom(field: "choice")
 }
 
@@ -401,6 +411,7 @@ type GrantShipsVoting {
   endTime: BigInt
   isVotingActive: Boolean!
   isSBTVoting: Boolean!
+  isDualToken: Boolean!
   totalVotes: BigInt!
   choices: [ShipChoice!]! @derivedFrom(field: "contest")
   votes: [ShipVote!]! @derivedFrom(field: "contest")
