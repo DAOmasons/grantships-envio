@@ -1,4 +1,4 @@
-import { GameManagerStrategyContract } from 'generated';
+import { GameManagerStrategy } from 'generated';
 import {
   ContentSchema,
   GameStatus,
@@ -10,10 +10,8 @@ import { addTransaction } from './utils/sync';
 import { addFeedCard, inWeiMarker } from './utils/feed';
 import { CHAIN } from './utils/network';
 
-GameManagerStrategyContract.GameManagerInitialized.loader(() => {});
-
-GameManagerStrategyContract.GameManagerInitialized.handler(
-  ({ event, context }) => {
+GameManagerStrategy.GameManagerInitialized.handler(
+  async ({ event, context }) => {
     context.GMInitParams.set({
       id: event.srcAddress,
       gmRootAccount: event.params.rootAccount,
@@ -32,21 +30,14 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
-      setCard: context.FeedCard.set,
-      setEntity: context.FeedItemEntity.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
       externalLink: `${CHAIN?.[event.chainId]?.SCAN}/address/${event.srcAddress}`,
     });
   }
 );
 
-GameManagerStrategyContract.Registered.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.anchorAddress, {});
-});
-
-GameManagerStrategyContract.Registered.handler(({ event, context }) => {
-  const grantShip = context.GrantShip.get(event.params.anchorAddress);
+GameManagerStrategy.Registered.handler(async ({ event, context }) => {
+  const grantShip = await context.GrantShip.get(event.params.anchorAddress);
 
   if (!grantShip) {
     context.log.error(
@@ -61,7 +52,7 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
     shipApplicationBytesData: event.params.applicationData,
     hasSubmittedApplication: true,
     isAwaitingApproval: true,
-    applicationSubmittedTime: event.blockTimestamp,
+    applicationSubmittedTime: event.block.timestamp,
     status: GameStatus.Pending,
   });
 
@@ -78,20 +69,13 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
       name: grantShip.name,
       pointer: grantShip.profileMetadata_id,
     },
-    setCard: context.FeedCard.set,
-    setEntity: context.FeedItemEntity.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `${`/ship/${grantShip.id}`}`,
   });
 });
 
-GameManagerStrategyContract.RoundCreated.loader(({ event, context }) => {
-  context.GameManager.load(event.srcAddress, {});
-});
-
-GameManagerStrategyContract.RoundCreated.handler(({ event, context }) => {
-  const gameManager = context.GameManager.get(event.srcAddress);
+GameManagerStrategy.RoundCreated.handler(async ({ event, context }) => {
+  const gameManager = await context.GameManager.get(event.srcAddress);
 
   if (!gameManager) {
     context.log.error(`GameManager not found for address ${event.srcAddress}`);
@@ -122,12 +106,8 @@ GameManagerStrategyContract.RoundCreated.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.RecipientRejected.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.recipientAddress, {});
-});
-
-GameManagerStrategyContract.RecipientRejected.handler(({ event, context }) => {
-  const ship = context.GrantShip.get(event.params.recipientAddress);
+GameManagerStrategy.RecipientRejected.handler(async ({ event, context }) => {
+  const ship = await context.GrantShip.get(event.params.recipientAddress);
 
   if (!ship) {
     context.log.error(
@@ -147,19 +127,15 @@ GameManagerStrategyContract.RecipientRejected.handler(({ event, context }) => {
     status: GameStatus.Rejected,
     isRejected: true,
     isAwaitingApproval: false,
-    rejectedTime: event.blockTimestamp,
+    rejectedTime: event.block.timestamp,
     applicationReviewReason_id: event.params.reason[1],
   });
 
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.RecipientAccepted.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.recipientAddress, {});
-});
-
-GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
-  const ship = context.GrantShip.get(event.params.recipientAddress);
+GameManagerStrategy.RecipientAccepted.handler(async ({ event, context }) => {
+  const ship = await context.GrantShip.get(event.params.recipientAddress);
 
   if (!ship) {
     context.log.error(
@@ -179,7 +155,7 @@ GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
     status: GameStatus.Accepted,
     isApproved: true,
     isAwaitingApproval: false,
-    approvedTime: event.blockTimestamp,
+    approvedTime: event.block.timestamp,
     applicationReviewReason_id: event.params.reason[1],
   });
 
@@ -194,22 +170,15 @@ GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
       name: ship.name,
       pointer: ship.profileMetadata_id,
     },
-    setCard: context.FeedCard.set,
-    setEntity: context.FeedItemEntity.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `${`/ship/${ship.id}`}`,
   });
 
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.ShipLaunched.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.recipientId, {});
-});
-
-GameManagerStrategyContract.ShipLaunched.handler(({ event, context }) => {
-  const ship = context.GrantShip.get(event.params.recipientId);
+GameManagerStrategy.ShipLaunched.handler(async ({ event, context }) => {
+  const ship = await context.GrantShip.get(event.params.recipientId);
 
   if (!ship) {
     context.log.error(`Ship not found for address ${event.params.recipientId}`);
@@ -224,14 +193,9 @@ GameManagerStrategyContract.ShipLaunched.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.Allocated.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.recipientId, {});
-  context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
-});
-
-GameManagerStrategyContract.Allocated.handler(({ event, context }) => {
-  const ship = context.GrantShip.get(event.params.recipientId);
-  const gameManager = context.GameManager.get(event.srcAddress);
+GameManagerStrategy.Allocated.handler(async ({ event, context }) => {
+  const ship = await context.GrantShip.get(event.params.recipientId);
+  const gameManager = await context.GameManager.get(event.srcAddress);
 
   if (!ship) {
     context.log.error(`Ship not found for address ${event.params.recipientId}`);
@@ -242,7 +206,14 @@ GameManagerStrategyContract.Allocated.handler(({ event, context }) => {
     context.log.error(`GameManager not found for address ${event.srcAddress}`);
     return;
   }
-  const currentRound = context.GameManager.getCurrentRound(gameManager);
+  if (!gameManager.currentRound_id) {
+    context.log.error(
+      `Current round not found for GameManager ${gameManager.id}`
+    );
+    return;
+  }
+
+  const currentRound = await context.GameRound.get(gameManager.currentRound_id);
 
   if (!currentRound) {
     context.log.error(
@@ -268,14 +239,9 @@ GameManagerStrategyContract.Allocated.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.Distributed.loader(({ event, context }) => {
-  context.GrantShip.load(event.params.recipientId, {});
-  context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
-});
-
-GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
-  const ship = context.GrantShip.get(event.params.recipientId);
-  const gameManager = context.GameManager.get(event.srcAddress);
+GameManagerStrategy.Distributed.handler(async ({ event, context }) => {
+  const ship = await context.GrantShip.get(event.params.recipientId);
+  const gameManager = await context.GameManager.get(event.srcAddress);
 
   if (!ship) {
     context.log.error(`Ship not found for address ${event.params.recipientId}`);
@@ -286,8 +252,14 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
     context.log.error(`GameManager not found for address ${event.srcAddress}`);
     return;
   }
+  if (!gameManager.currentRound_id) {
+    context.log.error(
+      `Current round not found for GameManager ${gameManager.id}`
+    );
+    return;
+  }
 
-  const currentRound = context.GameManager.getCurrentRound(gameManager);
+  const currentRound = await context.GameRound.get(gameManager.currentRound_id);
 
   if (!currentRound) {
     context.log.error(
@@ -321,29 +293,29 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
       name: ship.name,
       pointer: ship.profileMetadata_id,
     },
-    setCard: context.FeedCard.set,
-    setEntity: context.FeedItemEntity.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `${`/ship/${ship.id}`}`,
   });
 
   addTransaction(event, context);
 });
 
-GameManagerStrategyContract.GameActive.loader(({ event, context }) => {
-  context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
-});
-
-GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
-  const gameManager = context.GameManager.get(event.srcAddress);
+GameManagerStrategy.GameActive.handler(async ({ event, context }) => {
+  const gameManager = await context.GameManager.get(event.srcAddress);
 
   if (!gameManager) {
     context.log.error(`GameManager not found for address ${event.srcAddress}`);
     return;
   }
 
-  const currentRound = context.GameManager.getCurrentRound(gameManager);
+  if (!gameManager.currentRound_id) {
+    context.log.error(
+      `Current round not found for GameManager ${gameManager.id}`
+    );
+    return;
+  }
+
+  const currentRound = await context.GameRound.get(gameManager.currentRound_id);
 
   if (!currentRound) {
     context.log.error(
@@ -357,7 +329,7 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
       ...currentRound,
       gameStatus: GameStatus.Active,
       isGameActive: true,
-      realStartTime: event.blockTimestamp,
+      realStartTime: event.block.timestamp,
     });
 
     addTransaction(event, context);
@@ -373,17 +345,14 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
-      setCard: context.FeedCard.set,
-      setEntity: context.FeedItemEntity.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
     });
   } else {
     context.GameRound.set({
       ...currentRound,
       gameStatus: GameStatus.Active,
       isGameActive: false,
-      realStartTime: event.blockTimestamp,
+      realStartTime: event.block.timestamp,
     });
 
     context.GameManager.set({
@@ -402,25 +371,16 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
-      setCard: context.FeedCard.set,
-      setEntity: context.FeedItemEntity.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
     });
 
     addTransaction(event, context);
   }
 });
 
-GameManagerStrategyContract.GameRoundTimesCreated.loader(
-  ({ event, context }) => {
-    context.GameManager.load(event.srcAddress, { loadCurrentRound: {} });
-  }
-);
-
-GameManagerStrategyContract.GameRoundTimesCreated.handler(
-  ({ event, context }) => {
-    const gameManager = context.GameManager.get(event.srcAddress);
+GameManagerStrategy.GameRoundTimesCreated.handler(
+  async ({ event, context }) => {
+    const gameManager = await context.GameManager.get(event.srcAddress);
 
     if (!gameManager) {
       context.log.error(
@@ -429,7 +389,16 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
       return;
     }
 
-    const currentRound = context.GameManager.getCurrentRound(gameManager);
+    if (!gameManager.currentRound_id) {
+      context.log.error(
+        `Current round not found for GameManager ${gameManager.id}`
+      );
+      return;
+    }
+
+    const currentRound = await context.GameRound.get(
+      gameManager.currentRound_id
+    );
 
     if (!currentRound) {
       context.log.error(
@@ -447,8 +416,7 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
   }
 );
 
-GameManagerStrategyContract.UpdatePosted.loader(({ event, context }) => {});
-GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
+GameManagerStrategy.UpdatePosted.handler(async ({ event, context }) => {
   const [, action] = event.params.tag.split(':');
 
   if (action === 'FACILITATOR_POST_UPDATE') {
@@ -458,7 +426,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       pointer: event.params.content[1],
     });
 
-    const postId = `facilitator-post-${event.transactionHash}-${event.logIndex}`;
+    const postId = `facilitator-post-${event.transaction.hash}-${event.logIndex}`;
 
     context.Update.set({
       id: postId,
@@ -470,10 +438,10 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       content_id: event.params.content[1],
       postDecorator: undefined,
       message: undefined,
-      postedBy: event.txOrigin || 'Unknown',
+      postedBy: event.transaction.from || 'Unknown',
       contentSchema: ContentSchema.RichText,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       entityMetadata_id: undefined,
       hostEntityId: event.srcAddress,
@@ -494,10 +462,7 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
         name: 'Facilitator Crew',
         pointer: 'facilitators',
       },
-      setCard: context.FeedCard.set,
-      setEntity: context.FeedItemEntity.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
       internalLink: `/post/${postId}`,
     });
 
