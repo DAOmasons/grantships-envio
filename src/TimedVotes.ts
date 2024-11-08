@@ -10,7 +10,7 @@ TimedVotesContract.Initialized.handler(({ event, context }) => {
     voteDuration: event.params.duration,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 TimedVotesContract.VotingStarted.loader(() => {});
@@ -46,7 +46,7 @@ TimedVotesContract.VotingStarted.handlerAsync(async ({ event, context }) => {
     endTime: event.params.endTime,
     isVotingActive: true,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 TimedVotesContract.VoteCast.loader(() => {});
@@ -116,7 +116,7 @@ TimedVotesContract.VoteCast.handlerAsync(async ({ event, context }) => {
     ...gsVoting,
     totalVotes: gsVoting.totalVotes + 1n,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 TimedVotesContract.VoteRetracted.loader(() => {});
@@ -189,5 +189,5 @@ TimedVotesContract.VoteRetracted.handlerAsync(async ({ event, context }) => {
     ...gsVoting,
     totalVotes: gsVoting.totalVotes - 1n,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

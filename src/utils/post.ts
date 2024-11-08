@@ -57,14 +57,14 @@ const invokeFacilitatorAction = ({
     });
 
     context.Update.set({
-      id: `facilitator-update-${event.transactionHash}`,
+      id: `facilitator-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/update/facilitator',
       playerType: Player.GameFacilitator,
       domain_id: ship.gameManager_id,
       entityAddress: 'facilitators',
       entityMetadata_id: undefined,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.RichText,
@@ -75,7 +75,7 @@ const invokeFacilitatorAction = ({
       hostEntityId: grantId,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
     return;
   }
 
@@ -165,7 +165,7 @@ const invokeProjectAction = ({
         requestingEarlyReview: false,
       });
     }
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else {
     context.log.warn(`In Project: Action not found: ${action}`);
   }
@@ -196,7 +196,7 @@ const invokeShipAction = ({
       beaconLastUpdated: event.blockTimestamp,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_APPLICATION') {
     context.RawMetadata.set({
       id: event.params.content[1],
@@ -207,7 +207,7 @@ const invokeShipAction = ({
       ...ship,
       customApplication_id: event.params.content[1],
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_INVITE') {
     const [, , projectId] = event.params.tag.split(':');
     const grantId = _grantId({
@@ -292,7 +292,7 @@ const invokeShipAction = ({
         internalLink: `/grant/${grantId}`,
       });
 
-      addTransaction(event, context.Transaction.set);
+      addTransaction(event, context);
     }
   } else if (action === 'SHIP_GRANT_UPDATE') {
     const [, , projectId] = event.params.tag.split(':');
@@ -348,7 +348,7 @@ const invokeShipAction = ({
         requestingEarlyReview: false,
       });
     }
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_REVIEW_GRANT') {
     const [, , projectId, decision] = event.params.tag.split(':');
     const grantId = _grantId({
@@ -450,7 +450,7 @@ const invokeShipAction = ({
       internalLink: `/grant/${grantId}`,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_POST') {
     const [, , possibleDomainAddress] = event.params.tag.split(':');
 
@@ -489,7 +489,7 @@ const invokeShipAction = ({
       hostEntityId: ship.id,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
 
     addFeedCard({
       message: undefined,

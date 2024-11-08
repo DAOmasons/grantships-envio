@@ -35,7 +35,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       anchor: event.params.anchor,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
   if (event.params.metadata[0] == 103115010001004n) {
     context.RawMetadata.set({
@@ -94,7 +94,7 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
       anchor: event.params.anchor,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 });
 
@@ -175,7 +175,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...project.pastProfileIds, project.profileId],
           pastNames: [...project.pastNames, project.name],
         });
-        addTransaction(event, context.Transaction.set);
+        addTransaction(event, context);
       } else {
         context.RawMetadata.set({
           id: event.params.metadata[1],
@@ -189,7 +189,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...project.pastProfileIds, project.profileId],
           hasEditedProfile: true,
         });
-        addTransaction(event, context.Transaction.set);
+        addTransaction(event, context);
       }
     }
 
@@ -209,7 +209,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...ship.pastProfileIds, ship.profileId],
           hasEditedProfile: true,
         });
-        addTransaction(event, context.Transaction.set);
+        addTransaction(event, context);
       } else {
         context.GrantShip.set({
           ...ship,
@@ -217,7 +217,7 @@ RegistryContract.ProfileMetadataUpdated.handlerAsync(
           pastProfileIds: [...ship.pastProfileIds, ship.profileId],
           hasEditedProfile: true,
         });
-        addTransaction(event, context.Transaction.set);
+        addTransaction(event, context);
       }
     }
   }

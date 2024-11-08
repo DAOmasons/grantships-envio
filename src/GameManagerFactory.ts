@@ -11,7 +11,7 @@ GameManagerFactoryContract.FactoryInitialized.handler(({ event, context }) => {
     createdAt: event.blockTimestamp,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerFactoryContract.TemplateCreated.loader(({ event }) => {});
@@ -25,7 +25,7 @@ GameManagerFactoryContract.TemplateCreated.handler(({ event, context }) => {
     createdAt: event.blockTimestamp,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerFactoryContract.RootAccountSwitched.loader(({ event, context }) => {
@@ -44,7 +44,7 @@ GameManagerFactoryContract.RootAccountSwitched.handler(({ event, context }) => {
     rootAccount: event.params.newRootAccount,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerFactoryContract.GameManagerDeployedWithPool.loader(
@@ -88,6 +88,6 @@ GameManagerFactoryContract.GameManagerDeployedWithPool.handler(
       gmRootAccount: gmInitParams.gmRootAccount,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 );

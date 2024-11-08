@@ -8,5 +8,5 @@ SBTBalancePointsContract.Initialized.handler(({ event, context }) => {
     id: event.srcAddress,
     voteTokenAddress: event.params.token,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

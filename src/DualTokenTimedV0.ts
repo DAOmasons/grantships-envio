@@ -49,7 +49,7 @@ DualTokenTimedV0Contract.VotingStarted.handlerAsync(
       endTime: event.params.endTime,
       isVotingActive: true,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 );
 
@@ -133,7 +133,7 @@ DualTokenTimedV0Contract.VoteCast.handlerAsync(async ({ event, context }) => {
     context.log.error(`Token not found: ${event.params.votingToken}`);
     return;
   }
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 DualTokenTimedV0Contract.VoteCast.loader(() => {});
@@ -210,6 +210,6 @@ DualTokenTimedV0Contract.VoteRetracted.handlerAsync(
       context.log.error(`Token not found: ${event.params.votingToken}`);
       return;
     }
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 );

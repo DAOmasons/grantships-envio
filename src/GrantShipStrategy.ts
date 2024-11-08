@@ -191,7 +191,7 @@ GrantShipStrategyContract.RecipientRegistered.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}/application`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GrantShipStrategyContract.UpdatePosted.loader(({ event, context }) => {
@@ -322,7 +322,7 @@ GrantShipStrategyContract.MilestonesSet.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}/milestones`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GrantShipStrategyContract.MilestonesReviewed.loader(({ event, context }) => {
@@ -429,7 +429,7 @@ GrantShipStrategyContract.MilestonesReviewed.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}/milestones`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GrantShipStrategyContract.RecipientStatusChanged.loader(
@@ -609,7 +609,7 @@ GrantShipStrategyContract.Allocated.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GrantShipStrategyContract.MilestoneSubmitted.loader(({ event, context }) => {});
@@ -698,7 +698,7 @@ GrantShipStrategyContract.MilestoneSubmitted.handlerAsync(
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
 
     addFeedCard({
       message: `${project.name} has submitted Milestone ${milestone.index + 1} to ${ship.name}`,
@@ -927,7 +927,7 @@ GrantShipStrategyContract.MilestoneRejected.handlerAsync(
       internalLink: `/grant/${grantId}/milestones`,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 );
 
@@ -1008,7 +1008,7 @@ GrantShipStrategyContract.Distributed.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GrantShipStrategyContract.GrantComplete.loader(({ event, context }) => {
@@ -1088,7 +1088,7 @@ GrantShipStrategyContract.GrantComplete.handler(({ event, context }) => {
     internalLink: `/grant/${grantId}`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 // update
 
@@ -1184,5 +1184,5 @@ GrantShipStrategyContract.GrantClawback.handler(({ event, context }) => {
     hostEntityId: grant.id,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

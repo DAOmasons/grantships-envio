@@ -41,7 +41,7 @@ FastFactory.AdminAdded.handler(async ({ event, context }) => {
   };
 
   context.FactoryEventsSummary.set(nextSummaryEntity);
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -62,7 +62,7 @@ FastFactory.AdminRemoved.handler(async ({ event, context }) => {
     ...summary,
     admins: summary.admins.filter((admin) => admin !== event.params.admin),
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -91,7 +91,7 @@ FastFactory.ContestTemplateCreated.handler(async ({ event, context }) => {
     mdPointer: event.params.contestInfo[1],
     active: true,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -127,7 +127,7 @@ FastFactory.ContestTemplateDeleted.handler(async ({ event, context }) => {
     ...contest,
     active: false,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -159,7 +159,7 @@ FastFactory.ModuleTemplateCreated.handler(async ({ event, context }) => {
     active: true,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -194,7 +194,7 @@ FastFactory.ModuleTemplateDeleted.handler(async ({ event, context }) => {
     ...newModule,
     active: false,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 FastFactory.ModuleCloned.contractRegister(({ event, context }) => {
@@ -233,7 +233,7 @@ FastFactory.ModuleCloned.handler(async ({ event, context }) => {
     moduleCloneCount: summary.moduleCloneCount + 1n,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -269,7 +269,7 @@ FastFactory.ContestCloned.handler(async ({ event, context }) => {
     filterTag: event.params.filterTag,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
@@ -291,5 +291,5 @@ FastFactory.ContestBuilt.handler(async ({ event, context }) => {
     contestCloneCount: summary.contestBuiltCount + 1n,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

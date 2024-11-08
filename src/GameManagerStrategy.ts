@@ -19,7 +19,7 @@ GameManagerStrategyContract.GameManagerInitialized.handler(
       gmRootAccount: event.params.rootAccount,
       gameFacilitatorId: event.params.gameFacilitatorId,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
 
     addFeedCard({
       message: `Facilitator Crew Initialized the Game Manager Contract`,
@@ -65,7 +65,7 @@ GameManagerStrategyContract.Registered.handler(({ event, context }) => {
     status: GameStatus.Pending,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 
   addFeedCard({
     message: `${grantShip.name} submitted a Grant Ship application`,
@@ -119,7 +119,7 @@ GameManagerStrategyContract.RoundCreated.handler(({ event, context }) => {
     currentRound_id: gameRoundId,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.RecipientRejected.loader(({ event, context }) => {
@@ -151,7 +151,7 @@ GameManagerStrategyContract.RecipientRejected.handler(({ event, context }) => {
     applicationReviewReason_id: event.params.reason[1],
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.RecipientAccepted.loader(({ event, context }) => {
@@ -201,7 +201,7 @@ GameManagerStrategyContract.RecipientAccepted.handler(({ event, context }) => {
     internalLink: `${`/ship/${ship.id}`}`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.ShipLaunched.loader(({ event, context }) => {
@@ -221,7 +221,7 @@ GameManagerStrategyContract.ShipLaunched.handler(({ event, context }) => {
     shipLaunched: true,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.Allocated.loader(({ event, context }) => {
@@ -265,7 +265,7 @@ GameManagerStrategyContract.Allocated.handler(({ event, context }) => {
       currentRound.totalAllocatedAmount + event.params.amount,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.Distributed.loader(({ event, context }) => {
@@ -328,7 +328,7 @@ GameManagerStrategyContract.Distributed.handler(({ event, context }) => {
     internalLink: `${`/ship/${ship.id}`}`,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 GameManagerStrategyContract.GameActive.loader(({ event, context }) => {
@@ -360,7 +360,7 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
       realStartTime: event.blockTimestamp,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
 
     addFeedCard({
       message: `Game Start! Funding round has begun!`,
@@ -408,7 +408,7 @@ GameManagerStrategyContract.GameActive.handler(({ event, context }) => {
       setMetadata: context.RawMetadata.set,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 });
 
@@ -443,7 +443,7 @@ GameManagerStrategyContract.GameRoundTimesCreated.handler(
       startTime: event.params.startTime,
       endTime: event.params.endTime,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 );
 
@@ -501,6 +501,6 @@ GameManagerStrategyContract.UpdatePosted.handler(({ event, context }) => {
       internalLink: `/post/${postId}`,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   }
 });

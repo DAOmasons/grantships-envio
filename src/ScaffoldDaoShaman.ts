@@ -33,7 +33,7 @@ ScaffoldDaoShamanContract.Initialized.handler(({ event, context }) => {
     sharesToken_id: event.params.sharesTokenAddress,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 ScaffoldDaoShamanContract.BadgeSaved.loader(({ event, context }) => {
@@ -71,7 +71,7 @@ ScaffoldDaoShamanContract.BadgeSaved.handler(({ event, context }) => {
     dao: shaman.dao,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 ScaffoldDaoShamanContract.BadgeRemoved.loader(({ event, context }) => {
@@ -94,7 +94,7 @@ ScaffoldDaoShamanContract.BadgeRemoved.handler(({ event, context }) => {
     exists: false,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 ScaffoldDaoShamanContract.BadgeAssigned.loader(({ event, context }) => {
@@ -152,7 +152,7 @@ ScaffoldDaoShamanContract.BadgeAssigned.handler(({ event, context }) => {
     });
   }
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 ScaffoldDaoShamanContract.GateUpdated.loader(({ event, context }) => {
@@ -167,5 +167,5 @@ ScaffoldDaoShamanContract.GateUpdated.handler(({ event, context }) => {
     hatId: event.params.hatId,
   });
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

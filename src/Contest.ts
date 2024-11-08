@@ -147,7 +147,7 @@ Contest_v0_1_0.ContestInitialized.handler(async ({ event, context }) => {
       totalVotes: 0n,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
     return;
   }
 
@@ -194,7 +194,7 @@ Contest_v0_1_0.ContestInitialized.handler(async ({ event, context }) => {
       isDualToken: false,
       totalVotes: 0n,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
     return;
   }
 
@@ -240,7 +240,7 @@ Contest_v0_1_0.ContestInitialized.handler(async ({ event, context }) => {
       isDualToken: true,
       totalVotes: 0n,
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
     return;
   }
 });
@@ -274,5 +274,5 @@ Contest_v0_1_0.ContestStatusChanged.handler(async ({ event, context }) => {
     });
   }
 
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
