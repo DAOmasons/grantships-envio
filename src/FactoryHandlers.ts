@@ -2,6 +2,7 @@ import { FastFactory } from 'generated';
 
 import { addTransaction } from './utils/sync';
 import { addChainId } from './utils/id';
+import { ContestVersion, Module } from './utils/constants';
 
 /// ===============================
 /// ======= FACTORY INIT ==========
@@ -196,6 +197,18 @@ FastFactory.ModuleTemplateDeleted.handler(async ({ event, context }) => {
   addTransaction(event, context.Transaction.set);
 });
 
+FastFactory.ModuleCloned.contractRegister(({ event, context }) => {
+  if (event.params.moduleName === Module.HatsAllowList_v0_1_1) {
+    context.addHatsAllowList(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.TimedVotes_v0_1_1) {
+    context.addTimedVotes(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.ERC20VotesPoints_v0_1_1) {
+    context.addERC20VotesPoints(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.SBTBalancePoints_v0_1_1) {
+    context.addSBTBalancePoints(event.params.moduleAddress);
+  }
+});
+
 FastFactory.ModuleCloned.handler(async ({ event, context }) => {
   const summary = await context.FactoryEventsSummary.get(
     `factory-${event.chainId}-${event.srcAddress}`
@@ -226,6 +239,14 @@ FastFactory.ModuleCloned.handler(async ({ event, context }) => {
 /// ===============================
 /// ======= CONTEST CLONED ========
 /// ===============================
+
+FastFactory.ContestCloned.contractRegister(async ({ event, context }) => {
+  if (event.params.contestAddress === ContestVersion.v0_1_0) {
+    context.addContest_v0_1_0(event.params.contestAddress);
+  } else {
+    console.error(`Contest ${event.params.contestAddress} not found`);
+  }
+});
 
 FastFactory.ContestCloned.handler(async ({ event, context }) => {
   const summary = await context.FactoryEventsSummary.get(
