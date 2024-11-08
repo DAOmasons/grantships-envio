@@ -72,10 +72,7 @@ AlloPoster.PostEvent.handler(async ({ event, context }) => {
           name: project.name,
           pointer: project.metadata_id,
         },
-        setCard: context.FeedCard.set,
-        setEntity: context.FeedItemEntity.set,
-        setEmbed: context.FeedItemEmbed.set,
-        setMetadata: context.RawMetadata.set,
+        context,
         internalLink: `/post/${postId}`,
       });
     } else {
