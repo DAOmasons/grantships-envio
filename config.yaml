@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: Grant Ships Envio
 contracts:
   - name: Registry
@@ -132,25 +133,16 @@ networks:
   - name: GrantShipFactory
     address: 0x1F8cbC9d98E63575F8eE4C21a7BA68A34f66F280
   - name: GameManagerStrategy
-    address:
   - name: GrantShipStrategy
-    address:  
   - name: FastFactory
     address: 0x2bABC10b90c67399F820433358fEb85fbB24f22f
   - name: HatsAllowList
-    address: 
   - name: ERC20VotesPoints
-    address:
   - name: SBTBalancePoints
-    address: 
   - name: DualTokenPointsV0
-    address:
   - name: DualTokenTimedV0
-    address:  
   - name: TimedVotes
-    address:
   - name: Contest_v0_1_0
-    address:  
   - name: HatsPoster
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
   - name: AlloPoster
@@ -168,32 +160,29 @@ networks:
   - name: GrantShipFactory
     address: 0x482a44043C67B92a69FAa47C5DA35453D88D140a
   - name: GameManagerStrategy
-    address:
   - name: GrantShipStrategy
-    address:  
   - name: FastFactory
     address: 0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70
   - name: HatsAllowList
-    address: 
   - name: ERC20VotesPoints
-    address:
   - name: SBTBalancePoints
-    address:  
   - name: DualTokenPointsV0
-    address:
   - name: DualTokenTimedV0
-    address:  
   - name: TimedVotes
-    address:
   - name: Contest_v0_1_0
-    address:  
   - name: HatsPoster
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
   - name: AlloPoster
     address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
   - name: ScaffoldDaoShaman
     address: 0x31090103830d168E508399e2149524B8906773Ca
+rollback_on_reorg: false
+field_selection:
+  transaction_fields:
+    - "from"
+    - "to"
+    - "hash"
+    - "transactionIndex"
 
-    
 
   
