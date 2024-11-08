@@ -1,15 +1,11 @@
-import { GrantShipFactoryContract } from 'generated';
+import { GrantShipFactory } from 'generated';
 
-GrantShipFactoryContract.ShipCreated.loader(({ event, context }) => {
-  context.GameManager.load(event.params.sender, {});
-
-  context.contractRegistration.addGrantShipStrategy(
-    event.params.strategyAddress
-  );
+GrantShipFactory.ShipCreated.contractRegister(async ({ event, context }) => {
+  context.addGrantShipStrategy(event.params.strategyAddress);
 });
 
-GrantShipFactoryContract.ShipCreated.handler(({ event, context }) => {
-  const gameManager = context.GameManager.get(event.params.sender);
+GrantShipFactory.ShipCreated.handler(async ({ event, context }) => {
+  const gameManager = await context.GameManager.get(event.params.sender);
 
   if (!gameManager) {
     console.warn(
