@@ -1,11 +1,7 @@
-import { ScaffoldDaoShamanContract } from 'generated';
+import { ScaffoldDaoShaman } from 'generated';
 import { addTransaction } from './utils/sync';
 
-ScaffoldDaoShamanContract.Initialized.loader(({ event, context }) => {});
-
-ScaffoldDaoShamanContract.Initialized.handler(({ event, context }) => {
-  console.log('ScaffoldDaoShamanContract.Initialized.handler');
-
+ScaffoldDaoShaman.Initialized.handler(async ({ event, context }) => {
   context.DAOToken.set({
     id: event.params.lootTokenAddress,
     address: event.params.lootTokenAddress,
@@ -36,13 +32,8 @@ ScaffoldDaoShamanContract.Initialized.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-ScaffoldDaoShamanContract.BadgeSaved.loader(({ event, context }) => {
-  //   context.BadgeTemplate.load(`${event.srcAddress}-${event.params.badgeId}`, {});
-  context.ScaffoldShaman.load(event.srcAddress, {});
-});
-
-ScaffoldDaoShamanContract.BadgeSaved.handler(({ event, context }) => {
-  const shaman = context.ScaffoldShaman.get(event.srcAddress);
+ScaffoldDaoShaman.BadgeSaved.handler(async ({ event, context }) => {
+  const shaman = await context.ScaffoldShaman.get(event.srcAddress);
 
   if (!shaman) {
     context.log.error(
@@ -74,12 +65,8 @@ ScaffoldDaoShamanContract.BadgeSaved.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-ScaffoldDaoShamanContract.BadgeRemoved.loader(({ event, context }) => {
-  context.BadgeTemplate.load(`${event.srcAddress}-${event.params.badgeId}`, {});
-});
-
-ScaffoldDaoShamanContract.BadgeRemoved.handler(({ event, context }) => {
-  const badge = context.BadgeTemplate.get(
+ScaffoldDaoShaman.BadgeRemoved.handler(async ({ event, context }) => {
+  const badge = await context.BadgeTemplate.get(
     `${event.srcAddress}-${event.params.badgeId}`
   );
   if (!badge) {
@@ -97,18 +84,12 @@ ScaffoldDaoShamanContract.BadgeRemoved.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-ScaffoldDaoShamanContract.BadgeAssigned.loader(({ event, context }) => {
-  context.ScaffoldShaman.load(event.srcAddress, {});
-  context.BadgeTemplate.load(`${event.srcAddress}-${event.params.badgeId}`, {});
-  context.BadgeHolder.load(`${event.srcAddress}-${event.params.recipient}`, {});
-});
-
-ScaffoldDaoShamanContract.BadgeAssigned.handler(({ event, context }) => {
-  const shaman = context.ScaffoldShaman.get(event.srcAddress);
-  const BadgeTemplate = context.BadgeTemplate.get(
+ScaffoldDaoShaman.BadgeAssigned.handler(async ({ event, context }) => {
+  const shaman = await context.ScaffoldShaman.get(event.srcAddress);
+  const BadgeTemplate = await context.BadgeTemplate.get(
     `${event.srcAddress}-${event.params.badgeId}`
   );
-  const badgeHolder = context.BadgeHolder.get(
+  const badgeHolder = await context.BadgeHolder.get(
     `${event.srcAddress}-${event.params.recipient}`
   );
 
@@ -126,7 +107,7 @@ ScaffoldDaoShamanContract.BadgeAssigned.handler(({ event, context }) => {
   });
 
   context.Badge.set({
-    id: `${event.transactionHash}-${event.params.recipient}-${event.params.badgeId}`,
+    id: `${event.transaction.hash}-${event.params.recipient}-${event.params.badgeId}`,
     template_id: `${event.srcAddress}-${event.params.badgeId}`,
     amount: event.params.amount,
     reason_id: event.params.metadata[1],
@@ -155,11 +136,7 @@ ScaffoldDaoShamanContract.BadgeAssigned.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-ScaffoldDaoShamanContract.GateUpdated.loader(({ event, context }) => {
-  context.Gate.load(`gate-${event.srcAddress}-${event.params.gateIndex}`);
-});
-
-ScaffoldDaoShamanContract.GateUpdated.handler(({ event, context }) => {
+ScaffoldDaoShaman.GateUpdated.handler(async ({ event, context }) => {
   context.Gate.set({
     id: `gate-${event.srcAddress}-${event.params.gateIndex}`,
     gateId: Number(event.params.gateIndex),
