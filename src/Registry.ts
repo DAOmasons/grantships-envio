@@ -1,10 +1,8 @@
-import { RegistryContract } from 'generated';
+import { Registry } from 'generated';
 import { GameStatus } from './utils/constants';
 import { addTransaction } from './utils/sync';
 
-RegistryContract.ProfileCreated.loader(({ event }) => {});
-
-RegistryContract.ProfileCreated.handler(({ event, context }) => {
+Registry.ProfileCreated.handler(async ({ event, context }) => {
   if (event.params.metadata[0] == 103115010001003n) {
     context.RawMetadata.set({
       id: event.params.metadata[1],
@@ -98,12 +96,8 @@ RegistryContract.ProfileCreated.handler(({ event, context }) => {
   }
 });
 
-RegistryContract.RoleGranted.loader(({ event, context }) => {
-  context.ProfileMemberGroup.load(event.params.role);
-});
-
-RegistryContract.RoleGranted.handler(({ event, context }) => {
-  const profile = context.ProfileMemberGroup.get(event.params.role);
+Registry.RoleGranted.handler(async ({ event, context }) => {
+  const profile = await context.ProfileMemberGroup.get(event.params.role);
 
   if (!profile) {
     context.ProfileMemberGroup.set({
@@ -119,12 +113,8 @@ RegistryContract.RoleGranted.handler(({ event, context }) => {
   }
 });
 
-RegistryContract.RoleRevoked.loader(({ event, context }) => {
-  context.ProfileMemberGroup.load(event.params.role);
-});
-
-RegistryContract.RoleRevoked.handler(({ event, context }) => {
-  const profile = context.ProfileMemberGroup.get(event.params.role);
+Registry.RoleRevoked.handler(async ({ event, context }) => {
+  const profile = await context.ProfileMemberGroup.get(event.params.role);
 
   if (!profile) {
     return;
@@ -140,85 +130,81 @@ RegistryContract.RoleRevoked.handler(({ event, context }) => {
   });
 });
 
-RegistryContract.ProfileMetadataUpdated.loader(({ event }) => {});
+Registry.ProfileMetadataUpdated.handler(async ({ event, context }) => {
+  const profileJoin = await context.ProfileIdToAnchor.get(
+    event.params.profileId
+  );
 
-RegistryContract.ProfileMetadataUpdated.handlerAsync(
-  async ({ event, context }) => {
-    const profileJoin = await context.ProfileIdToAnchor.get(
-      event.params.profileId
-    );
+  if (!profileJoin) {
+    // don't issue a warning here, as this is a common case
+    return;
+  }
 
-    if (!profileJoin) {
-      // don't issue a warning here, as this is a common case
-      return;
-    }
+  const project = await context.Project.get(profileJoin.anchor);
 
-    const project = await context.Project.get(profileJoin.anchor);
+  if (project) {
+    const hasNameChange = event.params.metadata[1].includes('##name##');
 
-    if (project) {
-      const hasNameChange = event.params.metadata[1].includes('##name##');
+    if (hasNameChange) {
+      const pointer = event.params.metadata[1].split('##name##')[0];
+      const name = event.params.metadata[1].split('##name##')[1];
 
-      if (hasNameChange) {
-        const pointer = event.params.metadata[1].split('##name##')[0];
-        const name = event.params.metadata[1].split('##name##')[1];
+      context.RawMetadata.set({
+        id: pointer,
+        protocol: event.params.metadata[0],
+        pointer,
+      });
+      context.Project.set({
+        ...project,
+        name,
+        metadata_id: pointer,
+        hasEditedProfile: true,
+        pastProfileIds: [...project.pastProfileIds, project.profileId],
+        pastNames: [...project.pastNames, project.name],
+      });
+      addTransaction(event, context);
+    } else {
+      context.RawMetadata.set({
+        id: event.params.metadata[1],
+        protocol: event.params.metadata[0],
+        pointer: event.params.metadata[1],
+      });
 
-        context.RawMetadata.set({
-          id: pointer,
-          protocol: event.params.metadata[0],
-          pointer,
-        });
-        context.Project.set({
-          ...project,
-          name,
-          metadata_id: pointer,
-          hasEditedProfile: true,
-          pastProfileIds: [...project.pastProfileIds, project.profileId],
-          pastNames: [...project.pastNames, project.name],
-        });
-        addTransaction(event, context);
-      } else {
-        context.RawMetadata.set({
-          id: event.params.metadata[1],
-          protocol: event.params.metadata[0],
-          pointer: event.params.metadata[1],
-        });
-
-        context.Project.set({
-          ...project,
-          metadata_id: event.params.metadata[1],
-          pastProfileIds: [...project.pastProfileIds, project.profileId],
-          hasEditedProfile: true,
-        });
-        addTransaction(event, context);
-      }
-    }
-
-    const ship = await context.GrantShip.get(profileJoin.anchor);
-
-    if (ship) {
-      const hasNameChange = event.params.metadata[1].includes('##name##');
-
-      if (hasNameChange) {
-        const pointer = event.params.metadata[1].split('##name##')[0];
-        const name = event.params.metadata[1].split('##name##')[1];
-
-        context.GrantShip.set({
-          ...ship,
-          name,
-          profileMetadata_id: pointer,
-          pastProfileIds: [...ship.pastProfileIds, ship.profileId],
-          hasEditedProfile: true,
-        });
-        addTransaction(event, context);
-      } else {
-        context.GrantShip.set({
-          ...ship,
-          profileMetadata_id: event.params.metadata[1],
-          pastProfileIds: [...ship.pastProfileIds, ship.profileId],
-          hasEditedProfile: true,
-        });
-        addTransaction(event, context);
-      }
+      context.Project.set({
+        ...project,
+        metadata_id: event.params.metadata[1],
+        pastProfileIds: [...project.pastProfileIds, project.profileId],
+        hasEditedProfile: true,
+      });
+      addTransaction(event, context);
     }
   }
-);
+
+  const ship = await context.GrantShip.get(profileJoin.anchor);
+
+  if (ship) {
+    const hasNameChange = event.params.metadata[1].includes('##name##');
+
+    if (hasNameChange) {
+      const pointer = event.params.metadata[1].split('##name##')[0];
+      const name = event.params.metadata[1].split('##name##')[1];
+
+      context.GrantShip.set({
+        ...ship,
+        name,
+        profileMetadata_id: pointer,
+        pastProfileIds: [...ship.pastProfileIds, ship.profileId],
+        hasEditedProfile: true,
+      });
+      addTransaction(event, context);
+    } else {
+      context.GrantShip.set({
+        ...ship,
+        profileMetadata_id: event.params.metadata[1],
+        pastProfileIds: [...ship.pastProfileIds, ship.profileId],
+        hasEditedProfile: true,
+      });
+      addTransaction(event, context);
+    }
+  }
+});
