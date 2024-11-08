@@ -1,39 +1,31 @@
-import { GameManagerFactoryContract } from 'generated';
+import { GameManagerFactory } from 'generated';
 import { addTransaction } from './utils/sync';
 
-GameManagerFactoryContract.FactoryInitialized.loader(({ event }) => {});
-
-GameManagerFactoryContract.FactoryInitialized.handler(({ event, context }) => {
+GameManagerFactory.FactoryInitialized.handler(async ({ event, context }) => {
   context.GameManagerFactory.set({
     id: event.srcAddress,
     rootAccount: event.params.rootAccount,
     chainId: event.chainId,
-    createdAt: event.blockTimestamp,
+    createdAt: event.block.timestamp,
   });
 
   addTransaction(event, context);
 });
 
-GameManagerFactoryContract.TemplateCreated.loader(({ event }) => {});
-
-GameManagerFactoryContract.TemplateCreated.handler(({ event, context }) => {
+GameManagerFactory.TemplateCreated.handler(async ({ event, context }) => {
   context.GameManagerTemplate.set({
     id: event.params.name,
     name: event.params.name,
     address: event.params.templateAddress,
     chainId: event.chainId,
-    createdAt: event.blockTimestamp,
+    createdAt: event.block.timestamp,
   });
 
   addTransaction(event, context);
 });
 
-GameManagerFactoryContract.RootAccountSwitched.loader(({ event, context }) => {
-  context.GameManagerFactory.load(event.srcAddress);
-});
-
-GameManagerFactoryContract.RootAccountSwitched.handler(({ event, context }) => {
-  const gmFactory = context.GameManagerFactory.get(event.srcAddress);
+GameManagerFactory.RootAccountSwitched.handler(async ({ event, context }) => {
+  const gmFactory = await context.GameManagerFactory.get(event.srcAddress);
 
   if (!gmFactory) {
     return;
@@ -47,20 +39,15 @@ GameManagerFactoryContract.RootAccountSwitched.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-GameManagerFactoryContract.GameManagerDeployedWithPool.loader(
+GameManagerFactory.GameManagerDeployedWithPool.contractRegister(
   ({ event, context }) => {
-    context.contractRegistration.addGameManagerStrategy(
-      event.params.gameManagerAddress
-    );
-
-    context.GameManagerFactory.load(event.srcAddress);
-    context.GMInitParams.load(event.params.gameManagerAddress);
+    context.addGameManagerStrategy(event.params.gameManagerAddress);
   }
 );
 
-GameManagerFactoryContract.GameManagerDeployedWithPool.handler(
-  ({ event, context }) => {
-    const gmInitParams = context.GMInitParams.get(
+GameManagerFactory.GameManagerDeployedWithPool.handler(
+  async ({ event, context }) => {
+    const gmInitParams = await context.GMInitParams.get(
       event.params.gameManagerAddress
     );
 
@@ -74,7 +61,7 @@ GameManagerFactoryContract.GameManagerDeployedWithPool.handler(
       poolId: event.params.poolId,
       profileId: event.params.profileId,
       chainId: event.chainId,
-      createdAt: event.blockTimestamp,
+      createdAt: event.block.timestamp,
       tokenAddress: event.params.tokenAddress,
       currentRoundNumber: BigInt(0),
       poolMetadataProtocol: event.params.poolMetadata[0],
