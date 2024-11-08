@@ -1,15 +1,11 @@
-import { AlloPosterContract } from 'generated';
+import { AlloPoster } from 'generated';
 import { ContentSchema, Player, UpdateScope } from './utils/constants';
 import { addTransaction } from './utils/sync';
 import { addFeedCard } from './utils/feed';
 import { isAddress } from 'viem';
 
-AlloPosterContract.PostEvent.loader(({ event, context }) => {
-  context.Project.load(event.params.anchor, {});
-});
-
-AlloPosterContract.PostEvent.handler(({ event, context }) => {
-  const project = context.Project.get(event.params.anchor);
+AlloPoster.PostEvent.handler(async ({ event, context }) => {
+  const project = await context.Project.get(event.params.anchor);
 
   if (!project) {
     context.log.error(`Project not found: ${event.params.anchor}`);
@@ -38,7 +34,7 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
         pointer: event.params._2[1],
       });
 
-      const postId = `project-post-${event.transactionHash}-${event.logIndex}`;
+      const postId = `project-post-${event.transaction.hash}-${event.logIndex}`;
 
       context.Update.set({
         id: postId,
@@ -48,18 +44,18 @@ AlloPosterContract.PostEvent.handler(({ event, context }) => {
         domain_id: possibleDomainAddress,
         entityAddress: project.id,
         entityMetadata_id: project.metadata_id,
-        postedBy: event.txOrigin,
+        postedBy: event.transaction.from || '',
         message: undefined,
         content_id: event.params._2[1],
         contentSchema: ContentSchema.RichText,
         postDecorator: undefined,
-        timestamp: event.blockTimestamp,
-        postBlockNumber: event.blockNumber,
+        timestamp: event.block.timestamp,
+        postBlockNumber: event.block.number,
         chainId: event.chainId,
         hostEntityId: project.id,
       });
 
-      addTransaction(event, context.Transaction.set);
+      addTransaction(event, context);
 
       addFeedCard({
         message: undefined,

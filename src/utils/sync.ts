@@ -1,14 +1,14 @@
-import { eventLog, transactionEntity } from 'generated';
+import { eventLog, handlerContext } from 'generated';
 
 export const addTransaction = (
   event: eventLog<unknown>,
-  set: (_1: transactionEntity) => void
+  context: handlerContext
 ) => {
-  set({
-    id: event.transactionHash,
-    blockNumber: BigInt(event.blockNumber),
+  context.Transaction.set({
+    id: event.transaction.hash,
+    blockNumber: BigInt(event.block.number),
     srcAddress: event.srcAddress,
-    txHash: event.transactionHash,
-    timestamp: event.blockTimestamp,
+    txHash: event.transaction.hash,
+    timestamp: event.block.timestamp,
   });
 };
