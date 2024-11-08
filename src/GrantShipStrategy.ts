@@ -171,7 +171,6 @@ GrantShipStrategy.RecipientRegistered.handler(async ({ event, context }) => {
 });
 
 GrantShipStrategy.UpdatePosted.handler(async ({ event, context }) => {
-  const [, , potentialProjectId] = event.params.tag.split(':');
   if (event.params.tag.startsWith('TAG')) {
     invokeActionByRoleType({ event, context });
   } else {
@@ -179,30 +178,33 @@ GrantShipStrategy.UpdatePosted.handler(async ({ event, context }) => {
   }
 });
 
-GrantShipStrategy.MilestonesSet.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    { loadShip: {}, loadProject: {}, loadCurrentMilestones: {} }
-  );
-});
-GrantShipStrategy.MilestonesSet.handler(({ event, context }) => {
+GrantShipStrategy.MilestonesSet.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
-  const grant = context.Grant.get(grantId);
-  const project = grant ? context.Grant.getProject(grant) : null;
-  const ship = grant ? context.Grant.getShip(grant) : null;
+  const grant = await context.Grant.get(grantId);
+  const project = await context.Project.get(event.params.recipientId);
+  const ship = await context.GrantShip.get(event.params.recipientId);
 
   if (!grant || !project || !ship) {
     context.log.error(`Grant, Project, or Ship not found: Grant Id ${grantId}`);
     return;
   }
 
-  const currentMilestones = context.Grant.getCurrentMilestones(grant);
+  if (!grant.currentMilestones_id) {
+    context.log.error(`Current Milestones not found: Grant Id ${grantId}`);
+    return;
+  }
+
+  const currentMilestones = await context.MilestoneSet.get(
+    grant.currentMilestones_id
+  );
+
+  if (!currentMilestones) {
+    context.log.error(`Milestone Set not found: Grant Id ${grantId}`);
+    return;
+  }
 
   const setIndex = currentMilestones ? currentMilestones.index + 1 : 0;
 
@@ -217,7 +219,7 @@ GrantShipStrategy.MilestonesSet.handler(({ event, context }) => {
     index: setIndex,
     grant_id: grantId,
     status: GameStatus.Pending,
-    timestamp: event.blockTimestamp,
+    timestamp: event.block.timestamp,
     milestoneLength: event.params.milestones.length,
     milestonesCompleted: 0,
     milestonesRejected: 0,
@@ -256,7 +258,7 @@ GrantShipStrategy.MilestonesSet.handler(({ event, context }) => {
     ...grant,
     status: GrantStatus.MilestonesSubmitted,
     currentMilestones_id: milestoneSetId,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
   });
 
   addFeedCard({
@@ -274,45 +276,39 @@ GrantShipStrategy.MilestonesSet.handler(({ event, context }) => {
       playerType: Player.Ship,
       name: ship.name,
     },
-    setEntity: context.FeedItemEntity.set,
+    context,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
     internalLink: `/grant/${grantId}/milestones`,
   });
 
   addTransaction(event, context);
 });
 
-GrantShipStrategy.MilestonesReviewed.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    {
-      loadCurrentMilestones: {},
-      loadProject: {},
-      loadShip: {},
-      loadGameManager: {},
-    }
-  );
-});
-GrantShipStrategy.MilestonesReviewed.handler(({ event, context }) => {
+GrantShipStrategy.MilestonesReviewed.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
 
-  const grant = context.Grant.get(grantId);
-  const currentMilestones = grant
-    ? context.Grant.getCurrentMilestones(grant)
-    : null;
-  const ship = grant ? context.Grant.getShip(grant) : null;
-  const project = grant ? context.Grant.getProject(grant) : null;
+  const grant = await context.Grant.get(grantId);
 
-  if (!grant || !currentMilestones || !ship || !project) {
+  if (!grant) {
+    context.log.error(`Grant not found: Grant Id ${grantId}`);
+    return;
+  }
+
+  if (!grant.currentMilestones_id) {
+    context.log.error(`Current Milestones not found: Grant Id ${grantId}`);
+    return;
+  }
+
+  const currentMilestones = await context.MilestoneSet.get(
+    grant.currentMilestones_id
+  );
+  const ship = await context.GrantShip.get(grant.ship_id);
+  const project = await context.Project.get(grant.project_id);
+
+  if (!currentMilestones || !ship || !project) {
     context.log.error(
       `Grant or Current Milestones or Ship or Project not found: Grant Id ${grantId}`
     );
@@ -334,14 +330,14 @@ GrantShipStrategy.MilestonesReviewed.handler(({ event, context }) => {
 
   context.Grant.set({
     ...grant,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
     status: isApproved
       ? GrantStatus.MilestonesApproved
       : GrantStatus.MilestonesRejected,
   });
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `grant-update-${event.transaction.hash}`,
     scope: UpdateScope.Grant,
     tag: isApproved
       ? 'grant/approve/milestoneSet'
@@ -350,13 +346,13 @@ GrantShipStrategy.MilestonesReviewed.handler(({ event, context }) => {
     domain_id: grant.gameManager_id,
     entityAddress: ship.id,
     entityMetadata_id: ship.profileMetadata_id,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     message: `${ship.name} has ${isApproved ? 'approved' : 'not approved'} ${project.name}'s Milestones Draft`,
     content_id: event.params.reason[1],
     contentSchema: ContentSchema.Reason,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
@@ -381,42 +377,35 @@ GrantShipStrategy.MilestonesReviewed.handler(({ event, context }) => {
       pointer: event.params.reason[1],
       protocol: event.params.reason[0],
     },
-    setEntity: context.FeedItemEntity.set,
+    context,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
     internalLink: `/grant/${grantId}/milestones`,
   });
 
   addTransaction(event, context);
 });
 
-GrantShipStrategy.RecipientStatusChanged.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    { loadProject: {}, loadShip: {}, loadGameManager: {} }
-  );
-});
-
 GrantShipStrategy.RecipientStatusChanged.handler(
-  ({ event, context }) => {
+  async ({ event, context }) => {
     const grantId = _grantId({
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
     });
-    const grant = context.Grant.get(grantId);
-    const ship = grant ? context.Grant.getShip(grant) : null;
-    const project = grant ? context.Grant.getProject(grant) : null;
-    const gameManager = grant ? context.Grant.getGameManager(grant) : null;
+    const grant = await context.Grant.get(grantId);
+    const ship = await context.GrantShip.get(event.srcAddress);
+    const project = await context.Project.get(event.params.recipientId);
 
-    if (!grant || !ship || !project || !gameManager) {
+    if (!grant || !ship || !project || !ship.gameManager_id) {
       context.log.error(
         `Grant, Ship, Project, or GameManager not found: ${grantId}`
       );
+      return;
+    }
+
+    const gameManager = await context.GameManager.get(ship.gameManager_id);
+
+    if (!gameManager) {
+      context.log.error(`GameManager not found: ${ship.gameManager_id}`);
       return;
     }
 
@@ -427,7 +416,7 @@ GrantShipStrategy.RecipientStatusChanged.handler(
       status: isApproved
         ? GrantStatus.Allocated
         : GrantStatus.FacilitatorRejected,
-      lastUpdated: event.blockTimestamp,
+      lastUpdated: event.block.timestamp,
     });
 
     context.RawMetadata.set({
@@ -437,7 +426,7 @@ GrantShipStrategy.RecipientStatusChanged.handler(
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}-${event.logIndex}`,
+      id: `grant-update-${event.transaction.hash}-${event.logIndex}`,
       scope: UpdateScope.Grant,
       tag: isApproved ? 'grant/allocate/approved' : 'grant/allocate/rejected',
       message: `Facilitators have ${isApproved ? 'approved' : 'not approved'} ${project.name}`,
@@ -445,12 +434,12 @@ GrantShipStrategy.RecipientStatusChanged.handler(
       domain_id: gameManager.id,
       entityAddress: 'facilitators',
       entityMetadata_id: undefined,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       content_id: event.params.reason[1],
       contentSchema: ContentSchema.Reason,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
@@ -475,11 +464,8 @@ GrantShipStrategy.RecipientStatusChanged.handler(
         pointer: event.params.reason[1],
         protocol: event.params.reason[0],
       },
-      setEntity: context.FeedItemEntity.set,
       event,
-      setCard: context.FeedCard.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
       internalLink: `/grant/${grantId}`,
     });
   }
@@ -487,27 +473,22 @@ GrantShipStrategy.RecipientStatusChanged.handler(
   // doesn't need to be added to the transaction table
 );
 
-GrantShipStrategy.Allocated.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    { loadShip: {}, loadGameManager: {}, loadProject: {} }
-  );
-});
-GrantShipStrategy.Allocated.handler(({ event, context }) => {
+GrantShipStrategy.Allocated.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
-  const grant = context.Grant.get(grantId);
-  const ship = grant ? context.Grant.getShip(grant) : null;
-  const project = grant ? context.Grant.getProject(grant) : null;
-  const gameManager = grant ? context.Grant.getGameManager(grant) : null;
+  const grant = await context.Grant.get(grantId);
+  const ship = await context.GrantShip.get(event.srcAddress);
+  const project = await context.Project.get(event.params.recipientId);
 
-  if (!grant || !ship || !project || !gameManager) {
+  if (!grant || !ship || !project || !ship.gameManager_id) {
     context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
+  const gameManager = await context.GameManager.get(ship.gameManager_id);
+  if (!gameManager) {
+    context.log.error(`GameManager not found: ${ship.gameManager_id}`);
     return;
   }
 
@@ -516,7 +497,7 @@ GrantShipStrategy.Allocated.handler(({ event, context }) => {
     isAllocated: true,
     requestingEarlyReview: false,
     amountAllocated: event.params.amount,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
   });
 
   context.GrantShip.set({
@@ -526,7 +507,7 @@ GrantShipStrategy.Allocated.handler(({ event, context }) => {
   });
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}-${event.logIndex}`,
+    id: `grant-update-${event.transaction.hash}-${event.logIndex}`,
     scope: UpdateScope.Grant,
     tag: 'grant/allocation/locked',
     message: `Grant is locked in! ${ship.name} has allocated ${inWeiMarker(event.params.amount)} to ${project.name}`,
@@ -534,12 +515,12 @@ GrantShipStrategy.Allocated.handler(({ event, context }) => {
     domain_id: gameManager.id,
     entityAddress: ship.id,
     entityMetadata_id: ship.profileMetadata_id,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     contentSchema: undefined,
     content_id: undefined,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp + 1,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp + 1,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
@@ -559,235 +540,237 @@ GrantShipStrategy.Allocated.handler(({ event, context }) => {
       playerType: Player.Project,
       name: project.name,
     },
-    setEntity: context.FeedItemEntity.set,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `/grant/${grantId}`,
   });
 
   addTransaction(event, context);
 });
 
-GrantShipStrategy.MilestoneSubmitted.loader(({ event, context }) => {});
-GrantShipStrategy.MilestoneSubmitted.handlerAsync(
-  async ({ event, context }) => {
-    const grantId = _grantId({
+GrantShipStrategy.MilestoneSubmitted.handler(async ({ event, context }) => {
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
+
+  const grant = await context.Grant.get(grantId);
+
+  if (!grant || !grant.currentMilestones_id) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
+
+  const currentMilestones = await context.MilestoneSet.get(
+    grant.currentMilestones_id
+  );
+
+  const project = await context.Project.get(event.params.recipientId);
+  const ship = await context.GrantShip.get(event.srcAddress);
+
+  if (!grant || !currentMilestones || !project || !ship) {
+    context.log.error(
+      `Grant, Current Milestones, or Project not found: ${grantId}`
+    );
+    return;
+  }
+
+  const setIndex = currentMilestones.index;
+
+  const milestone = await context.Milestone.get(
+    _milestoneId({
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
-    });
+      setIndex,
+      index: Number(event.params.milestoneId),
+    })
+  );
 
-    const grant = await context.Grant.get(grantId);
-    const currentMilestones = grant
-      ? await context.Grant.getCurrentMilestones(grant)
-      : null;
-    const project = grant ? await context.Grant.getProject(grant) : null;
-    const ship = grant ? await context.Grant.getShip(grant) : null;
+  if (!milestone) {
+    context.log.error(`Milestone not found: ${event.params.milestoneId}`);
+    return;
+  }
 
-    if (!grant || !currentMilestones || !project || !ship) {
-      context.log.error(
-        `Grant, Current Milestones, or Project not found: ${grantId}`
-      );
-      return;
-    }
+  const isResubmitting = milestone.status === GameStatus.Rejected;
+  const newMilestonesRejectedCount = isResubmitting
+    ? currentMilestones.milestonesRejected - 1
+    : currentMilestones.milestonesRejected;
+  const hasRejectedMilestones = newMilestonesRejectedCount > 0;
 
-    const setIndex = currentMilestones.index;
+  context.Grant.set({
+    ...grant,
+    hasPendingMilestones: true,
+    hasRejectedMilestones,
+    lastUpdated: event.block.timestamp,
+  });
 
-    const milestone = await context.Milestone.get(
-      _milestoneId({
-        projectId: event.params.recipientId,
-        shipSrc: event.srcAddress,
-        setIndex,
-        index: Number(event.params.milestoneId),
-      })
-    );
+  context.Milestone.set({
+    ...milestone,
+    status: GameStatus.Pending,
+  });
 
-    if (!milestone) {
-      context.log.error(`Milestone not found: ${event.params.milestoneId}`);
-      return;
-    }
+  context.MilestoneSet.set({
+    ...currentMilestones,
+    milestonesPending: currentMilestones.milestonesPending + 1,
+    milestonesRejected: newMilestonesRejectedCount,
+  });
 
-    const isResubmitting = milestone.status === GameStatus.Rejected;
-    const newMilestonesRejectedCount = isResubmitting
-      ? currentMilestones.milestonesRejected - 1
-      : currentMilestones.milestonesRejected;
-    const hasRejectedMilestones = newMilestonesRejectedCount > 0;
+  context.RawMetadata.set({
+    id: event.params.metadata[1],
+    protocol: event.params.metadata[0],
+    pointer: event.params.metadata[1],
+  });
 
-    context.Grant.set({
-      ...grant,
-      hasPendingMilestones: true,
-      hasRejectedMilestones,
-      lastUpdated: event.blockTimestamp,
-    });
+  context.Update.set({
+    id: `${event.params.milestoneId}:milestone-submit-${event.transaction.hash}`,
+    scope: UpdateScope.Grant,
+    tag: 'grant/milestone/submit',
+    message: `${project.name} has submitted ${event.params.milestoneId + 1n}`,
+    playerType: Player.Project,
+    domain_id: grant.gameManager_id,
+    entityAddress: project.id,
+    entityMetadata_id: project.metadata_id,
+    postedBy: event.transaction.from,
+    contentSchema: ContentSchema.RichText,
+    content_id: event.params.metadata[1],
+    postDecorator: undefined,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
+    chainId: event.chainId,
+    hostEntityId: grant.id,
+  });
+  addTransaction(event, context);
 
-    context.Milestone.set({
-      ...milestone,
-      status: GameStatus.Pending,
-    });
-
-    context.MilestoneSet.set({
-      ...currentMilestones,
-      milestonesPending: currentMilestones.milestonesPending + 1,
-      milestonesRejected: newMilestonesRejectedCount,
-    });
-
-    context.RawMetadata.set({
-      id: event.params.metadata[1],
+  addFeedCard({
+    message: `${project.name} has submitted Milestone ${milestone.index + 1} to ${ship.name}`,
+    tag: 'grant/milestone/submit',
+    domain: ship.gameManager_id || 'NEVER',
+    richTextContent: {
       protocol: event.params.metadata[0],
       pointer: event.params.metadata[1],
-    });
-
-    context.Update.set({
-      id: `${event.params.milestoneId}:milestone-submit-${event.transactionHash}`,
-      scope: UpdateScope.Grant,
-      tag: 'grant/milestone/submit',
-      message: `${project.name} has submitted ${event.params.milestoneId + 1n}`,
+    },
+    subject: {
+      id: project.id,
       playerType: Player.Project,
-      domain_id: grant.gameManager_id,
-      entityAddress: project.id,
-      entityMetadata_id: project.metadata_id,
-      postedBy: event.txOrigin,
-      contentSchema: ContentSchema.RichText,
-      content_id: event.params.metadata[1],
-      postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
-      chainId: event.chainId,
-      hostEntityId: grant.id,
-    });
-    addTransaction(event, context);
+      name: project.name,
+      pointer: project.metadata_id,
+    },
+    object: {
+      id: ship.id,
+      playerType: Player.Ship,
+      name: ship.name,
+    },
+    event,
+    context,
+    internalLink: `/grant/${grantId}/milestones`,
+  });
+});
 
-    addFeedCard({
-      message: `${project.name} has submitted Milestone ${milestone.index + 1} to ${ship.name}`,
-      tag: 'grant/milestone/submit',
-      domain: ship.gameManager_id || 'NEVER',
-      richTextContent: {
-        protocol: event.params.metadata[0],
-        pointer: event.params.metadata[1],
-      },
-      subject: {
-        id: project.id,
-        playerType: Player.Project,
-        name: project.name,
-        pointer: project.metadata_id,
-      },
-      object: {
-        id: ship.id,
-        playerType: Player.Ship,
-        name: ship.name,
-      },
-      setEntity: context.FeedItemEntity.set,
-      event,
-      setCard: context.FeedCard.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
-      internalLink: `/grant/${grantId}/milestones`,
-    });
+GrantShipStrategy.MilestoneStatusChanged.handler(async ({ event, context }) => {
+  const grantId = _grantId({
+    projectId: event.params.recipientId,
+    shipSrc: event.srcAddress,
+  });
+
+  const grant = await context.Grant.get(grantId);
+
+  if (!grant || !grant.currentMilestones_id) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
   }
-);
+  const currentMilestones = await context.MilestoneSet.get(
+    grant.currentMilestones_id
+  );
+  const ship = await context.GrantShip.get(event.srcAddress);
+  const project = await context.Project.get(event.params.recipientId);
 
-GrantShipStrategy.MilestoneStatusChanged.loader(({ event, context }) => {});
-GrantShipStrategy.MilestoneStatusChanged.handlerAsync(
-  async ({ event, context }) => {
-    const grantId = _grantId({
+  if (!grant || !currentMilestones || !ship || !project) {
+    context.log.error(`Grant or Current Milestones not found: ${grantId}`);
+    return;
+  }
+
+  const setIndex = currentMilestones.index;
+
+  const milestone = await context.Milestone.get(
+    _milestoneId({
       projectId: event.params.recipientId,
       shipSrc: event.srcAddress,
-    });
+      setIndex,
+      index: Number(event.params.milestoneId),
+    })
+  );
 
-    const grant = await context.Grant.get(grantId);
-    const currentMilestones = grant
-      ? await context.Grant.getCurrentMilestones(grant)
-      : null;
-    const ship = grant ? await context.Grant.getShip(grant) : null;
-    const project = grant ? await context.Grant.getProject(grant) : null;
-
-    if (!grant || !currentMilestones || !ship || !project) {
-      context.log.error(`Grant or Current Milestones not found: ${grantId}`);
-      return;
-    }
-
-    const setIndex = currentMilestones.index;
-
-    const milestone = await context.Milestone.get(
-      _milestoneId({
-        projectId: event.params.recipientId,
-        shipSrc: event.srcAddress,
-        setIndex,
-        index: Number(event.params.milestoneId),
-      })
-    );
-
-    if (!milestone) {
-      context.log.error(`Milestone not found: ${event.params.milestoneId}`);
-      return;
-    }
-
-    const allMilestonesApproved =
-      currentMilestones.milestonesCompleted + 1 ===
-      currentMilestones.milestoneLength;
-    const hasPendingMilestones = currentMilestones.milestonesPending - 1 > 0;
-
-    context.MilestoneSet.set({
-      ...currentMilestones,
-      milestonesPending: currentMilestones.milestonesPending - 1,
-      milestonesCompleted: currentMilestones.milestonesCompleted + 1,
-    });
-
-    context.Grant.set({
-      ...grant,
-      allMilestonesApproved,
-      hasPendingMilestones,
-      lastUpdated: event.blockTimestamp,
-      status: allMilestonesApproved
-        ? GrantStatus.AllMilestonesComplete
-        : grant.status,
-    });
-
-    context.Milestone.set({
-      ...milestone,
-      status: GameStatus.Accepted,
-    });
-
-    context.Update.set({
-      id: `${event.params.milestoneId}:grant-update-${event.transactionHash}-${event.logIndex}`,
-      scope: UpdateScope.Grant,
-      tag: 'grant/milestone/accepted',
-      message: `${ship.name} has approved milestone ${event.params.milestoneId + 1n}`,
-      playerType: Player.Ship,
-      domain_id: grant.gameManager_id,
-      entityAddress: ship.id,
-      entityMetadata_id: ship.profileMetadata_id,
-      postedBy: event.txOrigin,
-      contentSchema: undefined,
-      content_id: undefined,
-      postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
-      chainId: event.chainId,
-      hostEntityId: grant.id,
-    });
-
-    // doesn't need to be added to the transaction table
+  if (!milestone) {
+    context.log.error(`Milestone not found: ${event.params.milestoneId}`);
+    return;
   }
-);
 
-GrantShipStrategy.MilestoneRejected.loader(({ event, context }) => {});
+  const allMilestonesApproved =
+    currentMilestones.milestonesCompleted + 1 ===
+    currentMilestones.milestoneLength;
+  const hasPendingMilestones = currentMilestones.milestonesPending - 1 > 0;
 
-GrantShipStrategy.MilestoneRejected.handlerAsync(async ({ event, context }) => {
+  context.MilestoneSet.set({
+    ...currentMilestones,
+    milestonesPending: currentMilestones.milestonesPending - 1,
+    milestonesCompleted: currentMilestones.milestonesCompleted + 1,
+  });
+
+  context.Grant.set({
+    ...grant,
+    allMilestonesApproved,
+    hasPendingMilestones,
+    lastUpdated: event.block.timestamp,
+    status: allMilestonesApproved
+      ? GrantStatus.AllMilestonesComplete
+      : grant.status,
+  });
+
+  context.Milestone.set({
+    ...milestone,
+    status: GameStatus.Accepted,
+  });
+
+  context.Update.set({
+    id: `${event.params.milestoneId}:grant-update-${event.transaction.hash}-${event.logIndex}`,
+    scope: UpdateScope.Grant,
+    tag: 'grant/milestone/accepted',
+    message: `${ship.name} has approved milestone ${event.params.milestoneId + 1n}`,
+    playerType: Player.Ship,
+    domain_id: grant.gameManager_id,
+    entityAddress: ship.id,
+    entityMetadata_id: ship.profileMetadata_id,
+    postedBy: event.transaction.from,
+    contentSchema: undefined,
+    content_id: undefined,
+    postDecorator: undefined,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
+    chainId: event.chainId,
+    hostEntityId: grant.id,
+  });
+
+  // doesn't need to be added to the transaction table
+});
+
+GrantShipStrategy.MilestoneRejected.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
   const grant = await context.Grant.get(grantId);
 
-  const currentMilestones = grant
-    ? await context.Grant.getCurrentMilestones(grant)
-    : null;
+  if (!grant || !grant.currentMilestones_id) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
 
-  const ship = grant ? await context.Grant.getShip(grant) : null;
+  const currentMilestones = await context.MilestoneSet.get(
+    grant.currentMilestones_id
+  );
 
-  const project = grant ? await context.Grant.getProject(grant) : null;
+  const ship = await context.GrantShip.get(event.srcAddress);
+  const project = await context.Project.get(event.params.recipientId);
 
   if (!grant || !currentMilestones || !ship || !project) {
     context.log.error(
@@ -837,11 +820,11 @@ GrantShipStrategy.MilestoneRejected.handlerAsync(async ({ event, context }) => {
     ...grant,
     hasRejectedMilestones: true,
     hasPendingMilestones,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
   });
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `grant-update-${event.transaction.hash}`,
     scope: UpdateScope.Grant,
     tag: 'grant/milestone/rejected',
     message: `${ship.name} has rejected milestone ${event.params.milestoneId + 1n}`,
@@ -849,12 +832,12 @@ GrantShipStrategy.MilestoneRejected.handlerAsync(async ({ event, context }) => {
     domain_id: grant.gameManager_id,
     entityAddress: ship.id,
     entityMetadata_id: ship.profileMetadata_id,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     contentSchema: ContentSchema.Reason,
     content_id: event.params.reason[1],
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
@@ -874,35 +857,23 @@ GrantShipStrategy.MilestoneRejected.handlerAsync(async ({ event, context }) => {
       playerType: Player.Project,
       name: project.name,
     },
-    setEntity: context.FeedItemEntity.set,
+    context,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
     internalLink: `/grant/${grantId}/milestones`,
   });
 
   addTransaction(event, context);
 });
 
-GrantShipStrategy.Distributed.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    { loadShip: {}, loadProject: {} }
-  );
-});
-GrantShipStrategy.Distributed.handler(({ event, context }) => {
+GrantShipStrategy.Distributed.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
 
-  const grant = context.Grant.get(grantId);
-  const ship = grant ? context.Grant.getShip(grant) : null;
-  const project = grant ? context.Grant.getProject(grant) : null;
+  const grant = await context.Grant.get(grantId);
+  const ship = await context.GrantShip.get(event.srcAddress);
+  const project = await context.Project.get(event.params.recipientId);
 
   if (!grant || !ship || !project) {
     context.log.error(`Grant, Ship, or Project not found: ${grantId}`);
@@ -917,11 +888,11 @@ GrantShipStrategy.Distributed.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     amountDistributed: grant.amountDistributed + event.params.amount,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
   });
 
   context.Update.set({
-    id: `${event.params.amount}:grant-update-${event.transactionHash}-${event.logIndex}`,
+    id: `${event.params.amount}:grant-update-${event.transaction.hash}-${event.logIndex}`,
     scope: UpdateScope.Grant,
     tag: 'grant/distributed',
     message: `${ship.name} has distributed ${inWeiMarker(event.params.amount)} to ${project.name} at recipient address ${event.params.recipientAddress}`,
@@ -929,12 +900,12 @@ GrantShipStrategy.Distributed.handler(({ event, context }) => {
     domain_id: grant.gameManager_id,
     entityAddress: 'system',
     entityMetadata_id: undefined,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     contentSchema: undefined,
     content_id: undefined,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp + 1,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp + 1,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
@@ -954,39 +925,23 @@ GrantShipStrategy.Distributed.handler(({ event, context }) => {
       playerType: Player.Project,
       name: project.name,
     },
-    setEntity: context.FeedItemEntity.set,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `/grant/${grantId}`,
   });
 
   addTransaction(event, context);
 });
 
-GrantShipStrategy.GrantComplete.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    {
-      loadProject: {},
-      loadShip: {},
-    }
-  );
-});
-
-GrantShipStrategy.GrantComplete.handler(({ event, context }) => {
+GrantShipStrategy.GrantComplete.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
 
-  const grant = context.Grant.get(grantId);
-  const project = grant ? context.Grant.getProject(grant) : null;
-  const ship = grant ? context.Grant.getShip(grant) : null;
+  const grant = await context.Grant.get(grantId);
+  const project = await context.Project.get(event.params.recipientId);
+  const ship = await context.GrantShip.get(event.srcAddress);
 
   if (!grant || !project || !ship) {
     context.log.error(`Grant not found: ${grantId}`);
@@ -996,12 +951,12 @@ GrantShipStrategy.GrantComplete.handler(({ event, context }) => {
   context.Grant.set({
     ...grant,
     grantCompleted: true,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
     status: GrantStatus.Completed,
   });
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `grant-update-${event.transaction.hash}`,
     scope: UpdateScope.Grant,
     tag: 'grant/completed',
     message: `Grant has been completed`,
@@ -1009,12 +964,12 @@ GrantShipStrategy.GrantComplete.handler(({ event, context }) => {
     domain_id: grant.gameManager_id,
     entityAddress: 'system',
     entityMetadata_id: undefined,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     contentSchema: undefined,
     content_id: undefined,
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
@@ -1034,11 +989,8 @@ GrantShipStrategy.GrantComplete.handler(({ event, context }) => {
       playerType: Player.Ship,
       name: ship.name,
     },
-    setEntity: context.FeedItemEntity.set,
     event,
-    setCard: context.FeedCard.set,
-    setEmbed: context.FeedItemEmbed.set,
-    setMetadata: context.RawMetadata.set,
+    context,
     internalLink: `/grant/${grantId}`,
   });
 
@@ -1046,36 +998,32 @@ GrantShipStrategy.GrantComplete.handler(({ event, context }) => {
 });
 // update
 
-GrantShipStrategy.GrantClawback.loader(({ event, context }) => {
-  context.Grant.load(
-    _grantId({
-      projectId: event.params.recipientId,
-      shipSrc: event.srcAddress,
-    }),
-    {
-      loadProject: {},
-      loadShip: {},
-      loadCurrentMilestones: {},
-      loadCurrentApplication: {},
-    }
-  );
-});
-
-GrantShipStrategy.GrantClawback.handler(({ event, context }) => {
+GrantShipStrategy.GrantClawback.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
     shipSrc: event.srcAddress,
   });
 
-  const grant = context.Grant.get(grantId);
-  const project = grant ? context.Grant.getProject(grant) : null;
-  const ship = grant ? context.Grant.getShip(grant) : null;
-  const currentMilestones = grant
-    ? context.Grant.getCurrentMilestones(grant)
-    : null;
-  const currentApplication = grant
-    ? context.Grant.getCurrentApplication(grant)
-    : null;
+  const grant = await context.Grant.get(grantId);
+  const project = await context.Project.get(event.params.recipientId);
+  const ship = await context.GrantShip.get(event.srcAddress);
+
+  if (
+    !ship ||
+    !project ||
+    !grant ||
+    !grant.currentApplication_id ||
+    !grant.currentMilestones_id
+  ) {
+    context.log.error(`Grant not found: ${grantId}`);
+    return;
+  }
+  const currentMilestones = await context.MilestoneSet.get(
+    grant?.currentApplication_id
+  );
+  const currentApplication = await context.Application.get(
+    grant?.currentApplication_id
+  );
 
   if (!grant || !project || !ship) {
     context.log.error(`Grant not found: ${grantId}`);
@@ -1104,7 +1052,7 @@ GrantShipStrategy.GrantClawback.handler(({ event, context }) => {
     amountAllocated: 0n,
     isAllocated: false,
     status: GrantStatus.None,
-    lastUpdated: event.blockTimestamp,
+    lastUpdated: event.block.timestamp,
   });
 
   context.GrantShip.set({
@@ -1120,7 +1068,7 @@ GrantShipStrategy.GrantClawback.handler(({ event, context }) => {
   });
 
   context.Update.set({
-    id: `grant-update-${event.transactionHash}`,
+    id: `grant-update-${event.transaction.hash}`,
     scope: UpdateScope.Grant,
     tag: 'grant/clawback',
     message: `Remaining Grant Funds have been clawed back`,
@@ -1128,12 +1076,12 @@ GrantShipStrategy.GrantClawback.handler(({ event, context }) => {
     domain_id: grant.gameManager_id,
     entityAddress: 'system',
     entityMetadata_id: undefined,
-    postedBy: event.txOrigin,
+    postedBy: event.transaction.from,
     contentSchema: ContentSchema.Reason,
     content_id: event.params.metadata[1],
     postDecorator: undefined,
-    timestamp: event.blockTimestamp,
-    postBlockNumber: event.blockNumber,
+    timestamp: event.block.timestamp,
+    postBlockNumber: event.block.number,
     chainId: event.chainId,
     hostEntityId: grant.id,
   });
