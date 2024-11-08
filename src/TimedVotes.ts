@@ -1,10 +1,8 @@
-import { TimedVotesContract } from 'generated';
+import { TimedVotes } from 'generated';
 import { createChoiceId, createVoteId } from './utils/id';
 import { addTransaction } from './utils/sync';
 
-TimedVotesContract.Initialized.loader(() => {});
-
-TimedVotesContract.Initialized.handler(({ event, context }) => {
+TimedVotes.Initialized.handler(async ({ event, context }) => {
   context.TVParams.set({
     id: event.srcAddress,
     voteDuration: event.params.duration,
@@ -13,9 +11,7 @@ TimedVotesContract.Initialized.handler(({ event, context }) => {
   addTransaction(event, context);
 });
 
-TimedVotesContract.VotingStarted.loader(() => {});
-
-TimedVotesContract.VotingStarted.handlerAsync(async ({ event, context }) => {
+TimedVotes.VotingStarted.handler(async ({ event, context }) => {
   const module = await context.StemModule.get(event.srcAddress);
 
   if (module === undefined) {
@@ -49,9 +45,7 @@ TimedVotesContract.VotingStarted.handlerAsync(async ({ event, context }) => {
   addTransaction(event, context);
 });
 
-TimedVotesContract.VoteCast.loader(() => {});
-
-TimedVotesContract.VoteCast.handlerAsync(async ({ event, context }) => {
+TimedVotes.VoteCast.handler(async ({ event, context }) => {
   const module = await context.StemModule.get(event.srcAddress);
 
   if (module === undefined) {
@@ -119,9 +113,7 @@ TimedVotesContract.VoteCast.handlerAsync(async ({ event, context }) => {
   addTransaction(event, context);
 });
 
-TimedVotesContract.VoteRetracted.loader(() => {});
-
-TimedVotesContract.VoteRetracted.handlerAsync(async ({ event, context }) => {
+TimedVotes.VoteRetracted.handler(async ({ event, context }) => {
   const module = await context.StemModule.get(event.srcAddress);
 
   if (module === undefined) {
