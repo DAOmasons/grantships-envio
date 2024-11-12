@@ -1,40 +1,50 @@
-// import { GameManagerStrategy } from 'generated';
-// import {
-//   ContentSchema,
-//   GameStatus,
-//   PostDecorator,
-//   Player,
-//   UpdateScope,
-// } from './utils/constants';
-// import { addTransaction } from './utils/sync';
-// import { addFeedCard, inWeiMarker } from './utils/feed';
-// import { CHAIN } from './utils/network';
+import { GameManagerStrategy } from 'generated';
+import {
+  ContentSchema,
+  GameStatus,
+  PostDecorator,
+  Player,
+  UpdateScope,
+} from './utils/constants';
+import { addTransaction } from './utils/sync';
+import { addFeedCard, inWeiMarker } from './utils/feed';
+import { CHAIN } from './utils/network';
 
-// GameManagerStrategy.GameManagerInitialized.handler(
-//   async ({ event, context }) => {
-//     context.GMInitParams.set({
-//       id: event.srcAddress,
-//       gmRootAccount: event.params.rootAccount,
-//       gameFacilitatorId: event.params.gameFacilitatorId,
-//     });
-//     addTransaction(event, context);
+GameManagerStrategy.GameManagerInitialized.handler(
+  async ({ event, context }) => {
+    const gameManager = await context.GameManager.get(event.srcAddress);
 
-//     addFeedCard({
-//       message: `Facilitator Crew Initialized the Game Manager Contract`,
-//       tag: 'gm-initialized',
-//       domain: event.srcAddress,
-//       event,
-//       subject: {
-//         id: event.srcAddress,
-//         playerType: Player.GameFacilitator,
-//         name: 'Facilitator Crew',
-//         pointer: 'facilitators',
-//       },
-//       context,
-//       externalLink: `${CHAIN?.[event.chainId]?.SCAN}/address/${event.srcAddress}`,
-//     });
-//   }
-// );
+    if (!gameManager) {
+      context.log.error(
+        `GameManager not found for address ${event.srcAddress}`
+      );
+      return;
+    }
+
+    context.GameManager.set({
+      ...gameManager,
+      gameFacilitatorId: event.params.gameFacilitatorId,
+      gmRootAccount: event.params.rootAccount,
+    });
+
+    addTransaction(event, context);
+
+    addFeedCard({
+      message: `Facilitator Crew Initialized the Game Manager Contract`,
+      tag: 'gm-initialized',
+      domain: event.srcAddress,
+      event,
+      subject: {
+        id: event.srcAddress,
+        playerType: Player.GameFacilitator,
+        name: 'Facilitator Crew',
+        pointer: 'facilitators',
+      },
+      context,
+      externalLink: `${CHAIN?.[event.chainId]?.SCAN}/address/${event.srcAddress}`,
+    });
+  }
+);
 
 // GameManagerStrategy.Registered.handler(async ({ event, context }) => {
 //   const grantShip = await context.GrantShip.get(event.params.anchorAddress);
