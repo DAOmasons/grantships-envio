@@ -48,17 +48,6 @@ GameManagerFactory.GameManagerDeployedWithPool.contractRegister(
 
 GameManagerFactory.GameManagerDeployedWithPool.handler(
   async ({ event, context }) => {
-    const gmInitParams = await context.GMInitParams.get(
-      event.params.gameManagerAddress
-    );
-
-    // if (!gmInitParams) {
-    //   context.log.error(
-    //     `GMInitParams not found for address: ${event.params.gameManagerAddress}`
-    //   );
-    //   return;
-    // }
-
     context.GameManager.set({
       id: event.params.gameManagerAddress,
       template_id: event.params.templateName,
@@ -73,10 +62,10 @@ GameManagerFactory.GameManagerDeployedWithPool.handler(
       profileMetadataProtocol: event.params.profileMetadata[0],
       profileMetadataPointer: event.params.profileMetadata[1],
       initData: event.params.initData,
-      gameFacilitatorId: 0n,
+      gameFacilitatorId: undefined,
       poolFunds: undefined,
       currentRound_id: undefined,
-      gmRootAccount: '',
+      gmRootAccount: undefined,
     });
 
     addTransaction(event, context);
