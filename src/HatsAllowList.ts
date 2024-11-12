@@ -11,73 +11,73 @@ HatsAllowList.Initialized.handler(async ({ event, context }) => {
   addTransaction(event, context);
 });
 
-HatsAllowList.Registered.handler(async ({ event, context }) => {
-  const stemModule = await context.StemModule.get(event.srcAddress);
-  if (stemModule === undefined) {
-    context.log.error(
-      `StemModule not found: Module address ${event.srcAddress}`
-    );
-    return;
-  }
-  if (stemModule.contestAddress === undefined) {
-    context.log.error(
-      `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
-    );
-    return;
-  }
+// HatsAllowList.Registered.handler(async ({ event, context }) => {
+//   const stemModule = await context.StemModule.get(event.srcAddress);
+//   if (stemModule === undefined) {
+//     context.log.error(
+//       `StemModule not found: Module address ${event.srcAddress}`
+//     );
+//     return;
+//   }
+//   if (stemModule.contestAddress === undefined) {
+//     context.log.error(
+//       `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
+//     );
+//     return;
+//   }
 
-  const choiceId = createChoiceId({
-    choiceId: event.params.choiceId,
-    contestAddress: stemModule.contestAddress,
-  });
+//   const choiceId = createChoiceId({
+//     choiceId: event.params.choiceId,
+//     contestAddress: stemModule.contestAddress,
+//   });
 
-  context.ShipChoice.set({
-    id: choiceId,
-    contest_id: stemModule.contestAddress,
-    mdProtocol: event.params._1[0][0],
-    mdPointer: event.params._1[0][1],
-    choiceData: event.params._1[1],
-    active: event.params._1[2],
-    voteTally: BigInt(0),
-    contextTokenTally: BigInt(0),
-    daoTokenTally: BigInt(0),
-  });
-  addTransaction(event, context);
-});
+//   context.ShipChoice.set({
+//     id: choiceId,
+//     contest_id: stemModule.contestAddress,
+//     mdProtocol: event.params._1[0][0],
+//     mdPointer: event.params._1[0][1],
+//     choiceData: event.params._1[1],
+//     active: event.params._1[2],
+//     voteTally: BigInt(0),
+//     contextTokenTally: BigInt(0),
+//     daoTokenTally: BigInt(0),
+//   });
+//   addTransaction(event, context);
+// });
 
-HatsAllowList.Removed.handler(async ({ event, context }) => {
-  const stemModule = await context.StemModule.get(event.srcAddress);
-  if (stemModule === undefined) {
-    context.log.error(
-      `StemModule not found: Module address ${event.srcAddress}`
-    );
-    return;
-  }
+// HatsAllowList.Removed.handler(async ({ event, context }) => {
+//   const stemModule = await context.StemModule.get(event.srcAddress);
+//   if (stemModule === undefined) {
+//     context.log.error(
+//       `StemModule not found: Module address ${event.srcAddress}`
+//     );
+//     return;
+//   }
 
-  if (stemModule.contestAddress === undefined) {
-    context.log.error(
-      `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
-    );
-    return;
-  }
+//   if (stemModule.contestAddress === undefined) {
+//     context.log.error(
+//       `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
+//     );
+//     return;
+//   }
 
-  const shipChoice = await context.ShipChoice.get(
-    createChoiceId({
-      choiceId: event.params.choiceId,
-      contestAddress: stemModule.contestAddress,
-    })
-  );
+//   const shipChoice = await context.ShipChoice.get(
+//     createChoiceId({
+//       choiceId: event.params.choiceId,
+//       contestAddress: stemModule.contestAddress,
+//     })
+//   );
 
-  if (shipChoice === undefined) {
-    context.log.error(
-      `ShipChoice not found: choice id ${event.params.choiceId}`
-    );
-    return;
-  }
+//   if (shipChoice === undefined) {
+//     context.log.error(
+//       `ShipChoice not found: choice id ${event.params.choiceId}`
+//     );
+//     return;
+//   }
 
-  context.ShipChoice.set({
-    ...shipChoice,
-    active: false,
-  });
-  addTransaction(event, context);
-});
+//   context.ShipChoice.set({
+//     ...shipChoice,
+//     active: false,
+//   });
+//   addTransaction(event, context);
+// });

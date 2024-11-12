@@ -297,7 +297,7 @@ const invokeShipAction = async ({
       projectId: projectId,
       shipSrc: event.srcAddress,
     });
-    const grant = context.Grant.get(grantId);
+    const grant = await context.Grant.get(grantId);
 
     context.RawMetadata.set({
       id: event.params.content[1],

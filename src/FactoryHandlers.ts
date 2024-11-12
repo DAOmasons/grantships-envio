@@ -241,7 +241,7 @@ FastFactory.ModuleCloned.handler(async ({ event, context }) => {
 /// ===============================
 
 FastFactory.ContestCloned.contractRegister(async ({ event, context }) => {
-  if (event.params.contestAddress === ContestVersion.v0_1_0) {
+  if (event.params.contestVersion === ContestVersion.v0_1_0) {
     context.addContest_v0_1_0(event.params.contestAddress);
   } else {
     console.error(`Contest ${event.params.contestAddress} not found`);
