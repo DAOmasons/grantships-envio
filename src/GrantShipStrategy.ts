@@ -480,6 +480,8 @@ GrantShipStrategy.RecipientStatusChanged.handler(
   // doesn't need to be added to the transaction table
 );
 
+//
+
 GrantShipStrategy.Allocated.handler(async ({ event, context }) => {
   const grantId = _grantId({
     projectId: event.params.recipientId,
