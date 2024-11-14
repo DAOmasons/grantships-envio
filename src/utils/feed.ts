@@ -1,10 +1,4 @@
-import {
-  eventLog,
-  feedCardEntity,
-  feedItemEmbedEntity,
-  feedItemEntityEntity,
-  rawMetadataEntity,
-} from 'generated';
+import { eventLog, handlerContext } from 'generated';
 import { Player } from './constants';
 
 type Object = {
@@ -25,7 +19,7 @@ type Embed = {
 };
 
 export const feedCardId = (tag: string, event: eventLog<unknown>) =>
-  `${tag}-${event.transactionHash}-${event.logIndex}`;
+  `${tag}-${event.transaction.hash}-${event.logIndex}`;
 
 export const addFeedCard = ({
   event,
@@ -36,10 +30,7 @@ export const addFeedCard = ({
   object,
   richTextContent,
   message,
-  setEntity,
-  setCard,
-  setEmbed,
-  setMetadata,
+  context,
   internalLink,
   externalLink,
 }: {
@@ -56,22 +47,19 @@ export const addFeedCard = ({
   };
   internalLink?: string;
   externalLink?: string;
-  setCard: (_1: feedCardEntity) => void;
-  setEntity: (_1: feedItemEntityEntity) => void;
-  setEmbed: (_1: feedItemEmbedEntity) => void;
-  setMetadata: (_1: rawMetadataEntity) => void;
+  context: handlerContext;
 }) => {
   const cardId = feedCardId(tag, event);
 
   // Set Subject
-  setEntity({
+  context.FeedItemEntity.set({
     id: subject.id,
     name: subject.name,
     playerType: subject.playerType,
   });
 
   if (embed) {
-    setEmbed({
+    context.FeedItemEmbed.set({
       id: `feed-embed-${cardId}`,
       key: embed.key,
       pointer: embed.pointer,
@@ -81,7 +69,7 @@ export const addFeedCard = ({
   }
 
   if (object) {
-    setEntity({
+    context.FeedItemEntity.set({
       id: object.id,
       name: object.name,
       playerType: object.playerType,
@@ -89,19 +77,19 @@ export const addFeedCard = ({
   }
 
   if (richTextContent) {
-    setMetadata({
+    context.RawMetadata.set({
       id: richTextContent.pointer,
       protocol: richTextContent.protocol,
       pointer: richTextContent.pointer,
     });
   }
 
-  setCard({
+  context.FeedCard.set({
     id: cardId,
-    timestamp: event.blockTimestamp,
+    timestamp: event.block.timestamp,
     message,
     richTextContent_id: richTextContent?.pointer || undefined,
-    sender: event.txOrigin,
+    sender: event.transaction.from,
     tag,
     subject_id: subject.id,
     object_id: object?.id || undefined,

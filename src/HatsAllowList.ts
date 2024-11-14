@@ -1,24 +1,18 @@
-import { HatsAllowListContract } from 'generated';
+import { HatsAllowList } from 'generated';
 import { createChoiceId } from './utils/id';
 import { addTransaction } from './utils/sync';
 
-HatsAllowListContract.Initialized.loader(() => {});
-
-HatsAllowListContract.Initialized.handler(({ event, context }) => {
+HatsAllowList.Initialized.handler(async ({ event, context }) => {
   context.HALParams.set({
     id: event.srcAddress,
     hatId: event.params.hatId,
     hatsAddress: event.params.hatsAddress,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
-HatsAllowListContract.Registered.loader(({ event, context }) => {
-  context.StemModule.load(event.srcAddress, undefined);
-});
-
-HatsAllowListContract.Registered.handler(({ event, context }) => {
-  const stemModule = context.StemModule.get(event.srcAddress);
+HatsAllowList.Registered.handler(async ({ event, context }) => {
+  const stemModule = await context.StemModule.get(event.srcAddress);
   if (stemModule === undefined) {
     context.log.error(
       `StemModule not found: Module address ${event.srcAddress}`
@@ -45,13 +39,13 @@ HatsAllowListContract.Registered.handler(({ event, context }) => {
     choiceData: event.params._1[1],
     active: event.params._1[2],
     voteTally: BigInt(0),
+    contextTokenTally: BigInt(0),
+    daoTokenTally: BigInt(0),
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
-HatsAllowListContract.Removed.loader(() => {});
-
-HatsAllowListContract.Removed.handlerAsync(async ({ event, context }) => {
+HatsAllowList.Removed.handler(async ({ event, context }) => {
   const stemModule = await context.StemModule.get(event.srcAddress);
   if (stemModule === undefined) {
     context.log.error(
@@ -85,5 +79,5 @@ HatsAllowListContract.Removed.handlerAsync(async ({ event, context }) => {
     ...shipChoice,
     active: false,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });

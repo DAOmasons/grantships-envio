@@ -1,26 +1,25 @@
-import { TimedVotes } from 'generated';
-import { createChoiceId, createVoteId } from './utils/id';
+import { DualTokenTimedV0 } from 'generated';
 import { addTransaction } from './utils/sync';
+import { createChoiceId, createVoteId } from './utils/id';
 
-TimedVotes.Initialized.handler(async ({ event, context }) => {
+DualTokenTimedV0.Initialized.handler(async ({ event, context }) => {
   context.TVParams.set({
     id: event.srcAddress,
     voteDuration: event.params.duration,
   });
-
-  addTransaction(event, context);
 });
 
-TimedVotes.VotingStarted.handler(async ({ event, context }) => {
+DualTokenTimedV0.VotingStarted.handler(async ({ event, context }) => {
   const stemModule = await context.StemModule.get(event.srcAddress);
 
-  if (stemModule === undefined) {
+  if (!stemModule) {
     context.log.error(
       `StemModule not found: Module address ${event.srcAddress}`
     );
     return;
   }
-  if (stemModule.contestAddress === undefined) {
+
+  if (!stemModule.contestAddress) {
     context.log.error(
       `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
     );
@@ -31,7 +30,7 @@ TimedVotes.VotingStarted.handler(async ({ event, context }) => {
     stemModule.contestAddress
   );
 
-  if (gsVoting === undefined) {
+  if (!gsVoting) {
     context.log.error(
       `GrantShipsVoting not found: Contest address ${stemModule.contestAddress}`
     );
@@ -47,17 +46,17 @@ TimedVotes.VotingStarted.handler(async ({ event, context }) => {
   addTransaction(event, context);
 });
 
-TimedVotes.VoteCast.handler(async ({ event, context }) => {
+DualTokenTimedV0.VoteCast.handler(async ({ event, context }) => {
   const stemModule = await context.StemModule.get(event.srcAddress);
-
-  if (stemModule === undefined) {
+  const params = await context.DualTokenTVParams.get(event.srcAddress);
+  if (!stemModule || !params) {
     context.log.error(
-      `StemModule not found: Module address ${event.srcAddress}`
+      `StemModule or Params not found: Module address ${event.srcAddress}`
     );
     return;
   }
 
-  if (stemModule.contestAddress === undefined) {
+  if (!stemModule.contestAddress) {
     context.log.error(
       `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
     );
@@ -68,7 +67,7 @@ TimedVotes.VoteCast.handler(async ({ event, context }) => {
     stemModule.contestAddress
   );
 
-  if (gsVoting === undefined) {
+  if (!gsVoting) {
     context.log.error(
       `GrantShipsVoting not found: Contest address ${stemModule.contestAddress}`
     );
@@ -95,52 +94,58 @@ TimedVotes.VoteCast.handler(async ({ event, context }) => {
     voter_id: event.params.voter,
     amount: event.params.amount,
     contest_id: gsVoting.id,
-    mdProtocol: event.params._3[0],
-    token: gsVoting.voteTokenAddress,
-    mdPointer: event.params._3[1],
+    mdProtocol: event.params.reason[0],
+    mdPointer: event.params.reason[1],
+    token: event.params.votingToken,
     isRetractVote: false,
   });
+
   context.GSVoter.set({
     id: event.params.voter,
     address: event.params.voter,
-  });
-
-  context.ShipChoice.set({
-    ...choice,
-    voteTally: choice.voteTally + event.params.amount,
   });
 
   context.GrantShipsVoting.set({
     ...gsVoting,
     totalVotes: gsVoting.totalVotes + 1n,
   });
+
+  if (params.daoTokenAddress === event.params.votingToken) {
+    context.ShipChoice.set({
+      ...choice,
+      daoTokenTally: choice.daoTokenTally + event.params.amount,
+    });
+  } else if (params.contextTokenAddress === event.params.votingToken) {
+    context.ShipChoice.set({
+      ...choice,
+      contextTokenTally: choice.contextTokenTally + event.params.amount,
+    });
+  } else {
+    context.log.error(`Token not found: ${event.params.votingToken}`);
+    return;
+  }
   addTransaction(event, context);
 });
 
-TimedVotes.VoteRetracted.handler(async ({ event, context }) => {
-  const stemModule = await context.StemModule.get(event.srcAddress);
-
-  if (stemModule === undefined) {
+DualTokenTimedV0.VoteRetracted.handler(async ({ event, context }) => {
+  const module = await context.StemModule.get(event.srcAddress);
+  const params = await context.DualTokenTVParams.get(event.srcAddress);
+  if (!module || !params) {
     context.log.error(
-      `StemModule not found: Module address ${event.srcAddress}`
+      `StemModule or Params not found: Module address ${event.srcAddress}`
     );
     return;
   }
-
-  if (stemModule.contestAddress === undefined) {
+  if (!module.contestAddress) {
     context.log.error(
-      `StemModule contestAddress not found: contest address ${stemModule.contestAddress}`
+      `StemModule contestAddress not found: contest address ${module.contestAddress}`
     );
     return;
   }
-
-  const gsVoting = await context.GrantShipsVoting.get(
-    stemModule.contestAddress
-  );
-
-  if (gsVoting === undefined) {
+  const gsVoting = await context.GrantShipsVoting.get(module.contestAddress);
+  if (!gsVoting) {
     context.log.error(
-      `GrantShipsVoting not found: Contest address ${stemModule.contestAddress}`
+      `GrantShipsVoting not found: Contest address ${module.contestAddress}`
     );
     return;
   }
@@ -151,41 +156,47 @@ TimedVotes.VoteRetracted.handler(async ({ event, context }) => {
       contestAddress: gsVoting.id,
     })
   );
-
   if (choice === undefined) {
     context.log.error(`ShipChoice not found: choice id ${choice}`);
     return;
   }
-
   const voteId = createVoteId(event);
 
   const vote = await context.ShipVote.get(voteId);
-
   if (vote === undefined) {
-    context.log.error(`ShipVote not found: vote id ${voteId}`);
+    context.log.error(`ShipVote not found: vote id ${vote}`);
     return;
   }
-
   context.ShipVote.set({
     id: voteId,
     choice_id: choice.id,
     voter_id: event.params.voter,
     amount: event.params.amount,
     contest_id: gsVoting.id,
-    token: gsVoting.voteTokenAddress,
-    mdProtocol: event.params._3[0],
-    mdPointer: event.params._3[1],
+    token: event.params.votingToken,
+    mdProtocol: event.params.reason[0],
+    mdPointer: event.params.reason[1],
     isRetractVote: true,
-  });
-
-  context.ShipChoice.set({
-    ...choice,
-    voteTally: choice.voteTally - vote.amount,
   });
 
   context.GrantShipsVoting.set({
     ...gsVoting,
     totalVotes: gsVoting.totalVotes - 1n,
   });
+
+  if (params.daoTokenAddress === event.params.votingToken) {
+    context.ShipChoice.set({
+      ...choice,
+      daoTokenTally: choice.daoTokenTally - event.params.amount,
+    });
+  } else if (params.contextTokenAddress === event.params.votingToken) {
+    context.ShipChoice.set({
+      ...choice,
+      contextTokenTally: choice.contextTokenTally - event.params.amount,
+    });
+  } else {
+    context.log.error(`Token not found: ${event.params.votingToken}`);
+    return;
+  }
   addTransaction(event, context);
 });

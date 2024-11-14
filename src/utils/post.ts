@@ -1,8 +1,7 @@
 import {
-  GrantShipStrategyContract_UpdatePostedEvent_eventArgs,
-  GrantShipStrategyContract_UpdatePostedEvent_handlerContext,
+  handlerContext,
+  GrantShipStrategy_UpdatePosted_eventArgs,
   eventLog,
-  grantShipEntity,
 } from 'generated';
 import { _applicationId, _grantId } from './id';
 import {
@@ -15,17 +14,18 @@ import {
 import { addTransaction } from './sync';
 import { addFeedCard } from './feed';
 import { isAddress } from 'viem';
+import { GrantShip_t } from 'generated/src/db/Entities.gen';
 
-const invokeFacilitatorAction = ({
+const invokeFacilitatorAction = async ({
   event,
   context,
   contractTag,
   ship,
 }: {
-  event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
-  context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
+  event: eventLog<GrantShipStrategy_UpdatePosted_eventArgs>;
+  context: handlerContext;
   contractTag: string;
-  ship?: grantShipEntity;
+  ship?: GrantShip_t;
 }) => {
   const [, action, projectId] = contractTag.split(':');
 
@@ -57,41 +57,41 @@ const invokeFacilitatorAction = ({
     });
 
     context.Update.set({
-      id: `facilitator-update-${event.transactionHash}`,
+      id: `facilitator-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/update/facilitator',
       playerType: Player.GameFacilitator,
       domain_id: ship.gameManager_id,
       entityAddress: 'facilitators',
       entityMetadata_id: undefined,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.RichText,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grantId,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
     return;
   }
 
   context.log.warn(`Action not found: In Facilitator Action: ${action}`);
 };
 
-const invokeProjectAction = ({
+const invokeProjectAction = async ({
   event,
   context,
   contractTag,
   ship,
 }: {
-  event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
-  context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
+  event: eventLog<GrantShipStrategy_UpdatePosted_eventArgs>;
+  context: handlerContext;
   contractTag: string;
-  ship?: grantShipEntity;
+  ship?: GrantShip_t;
 }) => {
   const [, action] = contractTag.split(':');
 
@@ -108,9 +108,9 @@ const invokeProjectAction = ({
       shipSrc: event.srcAddress,
     });
 
-    const grant = context.Grant.get(grantId);
+    const grant = await context.Grant.get(grantId);
 
-    const project = context.Project.get(event.params.recipientId);
+    const project = await context.Project.get(event.params.recipientId);
 
     if (!project || !ship) {
       context.log.error(
@@ -126,20 +126,20 @@ const invokeProjectAction = ({
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `grant-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/update/project',
       playerType: Player.Project,
       domain_id: ship.gameManager_id,
       entityAddress: project.id,
       entityMetadata_id: project.metadata_id,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.RichText,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grantId,
     });
@@ -149,7 +149,7 @@ const invokeProjectAction = ({
         project_id: projectId,
         ship_id: ship.id,
         gameManager_id: ship.gameManager_id || 'NOT_FOUND',
-        lastUpdated: event.blockTimestamp,
+        lastUpdated: event.block.timestamp,
         amount: undefined,
         status: GrantStatus.ProjectInitiated,
         amountAllocated: 0n,
@@ -165,22 +165,22 @@ const invokeProjectAction = ({
         requestingEarlyReview: false,
       });
     }
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else {
     context.log.warn(`In Project: Action not found: ${action}`);
   }
 };
 
-const invokeShipAction = ({
+const invokeShipAction = async ({
   event,
   context,
   contractTag,
   ship,
 }: {
-  event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
-  context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
+  event: eventLog<GrantShipStrategy_UpdatePosted_eventArgs>;
+  context: handlerContext;
   contractTag: string;
-  ship: grantShipEntity;
+  ship: GrantShip_t;
 }) => {
   const [, action] = contractTag.split(':');
 
@@ -193,10 +193,10 @@ const invokeShipAction = ({
     context.GrantShip.set({
       ...ship,
       beaconMessage_id: event.params.content[1],
-      beaconLastUpdated: event.blockTimestamp,
+      beaconLastUpdated: event.block.timestamp,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_APPLICATION') {
     context.RawMetadata.set({
       id: event.params.content[1],
@@ -207,7 +207,7 @@ const invokeShipAction = ({
       ...ship,
       customApplication_id: event.params.content[1],
     });
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_INVITE') {
     const [, , projectId] = event.params.tag.split(':');
     const grantId = _grantId({
@@ -215,8 +215,8 @@ const invokeShipAction = ({
       shipSrc: event.srcAddress,
     });
 
-    const grant = context.Grant.get(grantId);
-    const project = context.Project.get(projectId);
+    const grant = await context.Grant.get(grantId);
+    const project = await context.Project.get(projectId);
 
     if (!project) {
       context.log.error(`Project not found: ${projectId}`);
@@ -224,20 +224,20 @@ const invokeShipAction = ({
     }
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `grant-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/invite/ship',
       playerType: Player.System,
       domain_id: ship.gameManager_id,
       entityAddress: 'system',
       entityMetadata_id: undefined,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: undefined,
       contentSchema: ContentSchema.BasicUpdate,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grantId,
     });
@@ -248,7 +248,7 @@ const invokeShipAction = ({
         project_id: projectId,
         ship_id: ship.id,
         gameManager_id: ship.gameManager_id || 'NOT_FOUND',
-        lastUpdated: event.blockTimestamp,
+        lastUpdated: event.block.timestamp,
         amount: undefined,
         status: GrantStatus.ShipInitiated,
         amountAllocated: 0n,
@@ -284,15 +284,12 @@ const invokeShipAction = ({
           pointer: event.params.content[1],
           key: 'text',
         },
-        setEntity: context.FeedItemEntity.set,
+        context,
         event,
-        setCard: context.FeedCard.set,
-        setEmbed: context.FeedItemEmbed.set,
-        setMetadata: context.RawMetadata.set,
         internalLink: `/grant/${grantId}`,
       });
 
-      addTransaction(event, context.Transaction.set);
+      addTransaction(event, context);
     }
   } else if (action === 'SHIP_GRANT_UPDATE') {
     const [, , projectId] = event.params.tag.split(':');
@@ -300,7 +297,7 @@ const invokeShipAction = ({
       projectId: projectId,
       shipSrc: event.srcAddress,
     });
-    const grant = context.Grant.get(grantId);
+    const grant = await context.Grant.get(grantId);
 
     context.RawMetadata.set({
       id: event.params.content[1],
@@ -309,20 +306,20 @@ const invokeShipAction = ({
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `grant-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/update/ship',
       playerType: Player.Ship,
       domain_id: ship.gameManager_id,
       entityAddress: ship.id,
       entityMetadata_id: ship.profileMetadata_id,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.RichText,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grantId,
     });
@@ -332,7 +329,7 @@ const invokeShipAction = ({
         project_id: projectId,
         ship_id: ship.id,
         gameManager_id: ship.gameManager_id || 'NOT_FOUND',
-        lastUpdated: event.blockTimestamp,
+        lastUpdated: event.block.timestamp,
         amount: undefined,
         status: GrantStatus.ShipInitiated,
         amountAllocated: 0n,
@@ -348,15 +345,15 @@ const invokeShipAction = ({
         requestingEarlyReview: false,
       });
     }
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_REVIEW_GRANT') {
     const [, , projectId, decision] = event.params.tag.split(':');
     const grantId = _grantId({
       projectId: projectId,
       shipSrc: event.srcAddress,
     });
-    const grant = context.Grant.get(grantId);
-    const project = context.Project.get(projectId);
+    const grant = await context.Grant.get(grantId);
+    const project = await context.Project.get(projectId);
     if (!grant) {
       context.log.error(`Grant not found: ${_grantId}`);
       return;
@@ -365,8 +362,14 @@ const invokeShipAction = ({
       context.log.error(`Project not found: ${projectId}`);
       return;
     }
+    if (!grant.currentApplication_id) {
+      context.log.error(`Application not found: ${grant.id}`);
+      return;
+    }
 
-    const application = context.Grant.getCurrentApplication(grant);
+    const application = await context.Application.get(
+      grant.currentApplication_id
+    );
 
     if (!application) {
       context.log.error(`Application not found: ${grant.id}`);
@@ -391,7 +394,7 @@ const invokeShipAction = ({
       status: isApproved
         ? GrantStatus.ApplicationApproved
         : GrantStatus.ApplicationRejected,
-      lastUpdated: event.blockTimestamp,
+      lastUpdated: event.block.timestamp,
     });
 
     context.Application.set({
@@ -400,7 +403,7 @@ const invokeShipAction = ({
     });
 
     context.Update.set({
-      id: `grant-update-${event.transactionHash}`,
+      id: `grant-update-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: isApproved
         ? 'grant/approve/application'
@@ -409,15 +412,15 @@ const invokeShipAction = ({
       domain_id: grant.gameManager_id,
       entityAddress: ship.id,
       entityMetadata_id: ship.profileMetadata_id,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: isApproved
         ? `${ship.name} has approved the Application`
         : `${ship.name} has not approved the Application`,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.Reason,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
@@ -442,15 +445,12 @@ const invokeShipAction = ({
         pointer: event.params.content[1],
         key: 'reason',
       },
-      setEntity: context.FeedItemEntity.set,
+      context,
       event,
-      setCard: context.FeedCard.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
       internalLink: `/grant/${grantId}`,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
   } else if (action === 'SHIP_POST') {
     const [, , possibleDomainAddress] = event.params.tag.split(':');
 
@@ -460,7 +460,7 @@ const invokeShipAction = ({
       pointer: event.params.content[1],
     });
 
-    const postId = `ship-post-${event.transactionHash}-${event.logIndex}`;
+    const postId = `ship-post-${event.transaction.hash}-${event.logIndex}`;
 
     const isCorrectDomain =
       isAddress(possibleDomainAddress) || possibleDomainAddress === 'Global';
@@ -478,18 +478,18 @@ const invokeShipAction = ({
       domain_id: possibleDomainAddress,
       entityAddress: ship.id,
       entityMetadata_id: ship.profileMetadata_id,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: event.params.content[1],
       contentSchema: ContentSchema.RichText,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: ship.id,
     });
 
-    addTransaction(event, context.Transaction.set);
+    addTransaction(event, context);
 
     addFeedCard({
       message: undefined,
@@ -506,10 +506,7 @@ const invokeShipAction = ({
         name: ship.name,
         pointer: ship.profileMetadata_id,
       },
-      setCard: context.FeedCard.set,
-      setEntity: context.FeedItemEntity.set,
-      setEmbed: context.FeedItemEmbed.set,
-      setMetadata: context.RawMetadata.set,
+      context,
       internalLink: `/post/${postId}`,
     });
   } else if (action === 'REQUEST_FACILITATOR') {
@@ -520,7 +517,7 @@ const invokeShipAction = ({
       shipSrc: event.srcAddress,
     });
 
-    const grant = context.Grant.get(grantId);
+    const grant = await context.Grant.get(grantId);
 
     if (!grant) {
       context.log.error(`Grant not found: ${grantId}`);
@@ -533,20 +530,20 @@ const invokeShipAction = ({
     });
 
     context.Update.set({
-      id: `request-facilitator-${event.transactionHash}`,
+      id: `request-facilitator-${event.transaction.hash}`,
       scope: UpdateScope.Grant,
       tag: 'grant/request-facilitator',
       playerType: Player.Ship,
       domain_id: grant.gameManager_id,
       entityAddress: ship.id,
       entityMetadata_id: ship.profileMetadata_id,
-      postedBy: event.txOrigin,
+      postedBy: event.transaction.from,
       message: undefined,
       content_id: undefined,
       contentSchema: undefined,
       postDecorator: undefined,
-      timestamp: event.blockTimestamp,
-      postBlockNumber: event.blockNumber,
+      timestamp: event.block.timestamp,
+      postBlockNumber: event.block.number,
       chainId: event.chainId,
       hostEntityId: grant.id,
     });
@@ -555,24 +552,25 @@ const invokeShipAction = ({
   }
 };
 
-export const invokeActionByRoleType = ({
+export const invokeActionByRoleType = async ({
   event,
   context,
 }: {
-  event: eventLog<GrantShipStrategyContract_UpdatePostedEvent_eventArgs>;
-  context: GrantShipStrategyContract_UpdatePostedEvent_handlerContext;
+  event: eventLog<GrantShipStrategy_UpdatePosted_eventArgs>;
+  context: handlerContext;
 }) => {
   const contractTag = event.params.tag;
 
   const role = event.params.role.toString();
-  const shipContext = context.ShipContext.get(event.srcAddress);
-  const ship = shipContext
-    ? context.ShipContext.getGrantShip(shipContext)
-    : undefined;
+  const shipContext = await context.ShipContext.get(event.srcAddress);
 
-  const gameManager = shipContext
-    ? context.ShipContext.getGameManager(shipContext)
-    : undefined;
+  if (!shipContext) {
+    context.log.warn(`ShipContext not found: ${event.srcAddress}`);
+    return;
+  }
+
+  const ship = await context.GrantShip.get(shipContext.grantShip_id);
+  const gameManager = await context.GameManager.get(shipContext.gameManager_id);
 
   const isShipOperatorPosting = ship && role === ship.hatId;
   const isFacilitatorPosting =

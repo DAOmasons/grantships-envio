@@ -1,3 +1,4 @@
+# yaml-language-server: $schema=./node_modules/envio/evm.schema.json
 name: Grant Ships Envio
 contracts:
   - name: Registry
@@ -6,7 +7,6 @@ contracts:
     events:
     - event: ProfileCreated(bytes32 indexed profileId, uint256 nonce, string name, (uint256,string) metadata, address owner, address anchor)
     - event: ProfileMetadataUpdated(bytes32 indexed profileId, (uint256,string) metadata)
-      isAsync: true
     - event: RoleGranted(bytes32 indexed role, address indexed account, address indexed sender)
     - event: RoleRevoked(bytes32 indexed role, address indexed account, address indexed sender)
   - name: GameManagerFactory
@@ -43,11 +43,8 @@ contracts:
     - event: RecipientStatusChanged(address recipientId, uint8 status, (uint256,string) reason)
     - event: MilestonesSet(address recipientId, uint256 milestonesLength, (uint256, (uint256,string), uint8)[] milestones)
     - event: MilestoneSubmitted(address recipientId, uint256 milestoneId, (uint256,string) metadata)
-      isAsync: true
     - event: MilestoneStatusChanged(address recipientId, uint256 milestoneId, uint8 status)
-      isAsync: true
     - event: MilestoneRejected(address recipientId, uint256 milestoneId, (uint256,string) reason)
-      isAsync: true
     - event: MilestonesReviewed(address recipientId, uint8 status, (uint256,string) reason)
     - event: Allocated(address indexed recipientId, uint256 amount, address tokenAddress, address sender)
     - event: Distributed(address indexed recipientId, address recipientAddress, uint256 amount, address sender)
@@ -83,7 +80,6 @@ contracts:
     - event: Initialized(address contest, address hatsAddress, uint256 hatId)
     - event: Registered(bytes32 choiceId, ((uint256, string), bytes, bool), address contest)
     - event: Removed(bytes32 choiceId, address contest)
-      isAsync: true    
   - name: ERC20VotesPoints
     handler: src/ERC20VotesPoints.ts
     events:
@@ -97,16 +93,23 @@ contracts:
     events:
     - event: Initialized(address contest, uint256 duration)
     - event: VotingStarted(uint256 startTime, uint256 endTime)
-      isAsync: true
     - event: VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string))
-      isAsync: true
     - event: VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string))
-      isAsync: true
+  - name: DualTokenTimedV0
+    handler: src/DualTokenTimedV0.ts
+    events:
+    - event: Initialized(address contest, uint256 duration, address daoToken, address contextToken);
+    - event: VotingStarted(uint256 startTime, uint256 endTime, address pointModule);
+    - event: VoteCast(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) reason, address votingToken);
+    - event: VoteRetracted(address indexed voter, bytes32 choiceId, uint256 amount, (uint256, string) reason, address votingToken);  
+  - name: DualTokenPointsV0
+    handler: src/DualTokenPointsV0.ts
+    events: 
+    - event: Initialized(address contest, address daoToken, address contextToken, uint256 votingCheckpoint);
   - name: Contest_v0_1_0
     handler: src/Contest.ts
     events:
     - event: ContestInitialized(address votesModule, address pointsModule, address choicesModule, address executionModule, bool isContinuous, bool isRetractable, uint8 status)
-      isAsync: true
     - event: ContestStatusChanged(uint8 status)
   - name: ScaffoldDaoShaman
     handler: src/ScaffoldDaoShaman.ts
@@ -130,21 +133,16 @@ networks:
   - name: GrantShipFactory
     address: 0x1F8cbC9d98E63575F8eE4C21a7BA68A34f66F280
   - name: GameManagerStrategy
-    address:
   - name: GrantShipStrategy
-    address:  
   - name: FastFactory
     address: 0x2bABC10b90c67399F820433358fEb85fbB24f22f
   - name: HatsAllowList
-    address: 
   - name: ERC20VotesPoints
-    address:
   - name: SBTBalancePoints
-    address:  
+  - name: DualTokenPointsV0
+  - name: DualTokenTimedV0
   - name: TimedVotes
-    address:
   - name: Contest_v0_1_0
-    address:  
   - name: HatsPoster
     address: 0x4F0dc1C7d91d914d921F3C9C188F4454AE260317
   - name: AlloPoster
@@ -162,28 +160,29 @@ networks:
   - name: GrantShipFactory
     address: 0x482a44043C67B92a69FAa47C5DA35453D88D140a
   - name: GameManagerStrategy
-    address:
   - name: GrantShipStrategy
-    address:  
   - name: FastFactory
     address: 0x98917Fe3554acFB9f982F6A4fE5Ad377EE55ee70
   - name: HatsAllowList
-    address: 
   - name: ERC20VotesPoints
-    address:
   - name: SBTBalancePoints
-    address:  
+  - name: DualTokenPointsV0
+  - name: DualTokenTimedV0
   - name: TimedVotes
-    address:
   - name: Contest_v0_1_0
-    address:  
   - name: HatsPoster
     address: 0x363a6eFF03cdAbD5Cf4921d9A85eAf7dFd2A7efD
   - name: AlloPoster
     address: 0xdeeceda1Ab6BCcC70eE2D15AF5e5a19d0B2793dD
   - name: ScaffoldDaoShaman
     address: 0x31090103830d168E508399e2149524B8906773Ca
+rollback_on_reorg: false
+field_selection:
+  transaction_fields:
+    - "from"
+    - "to"
+    - "hash"
+    - "transactionIndex"
 
-    
 
   

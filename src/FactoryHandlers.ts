@@ -1,49 +1,23 @@
-import {
-  FastFactoryContract,
-  FactoryEventsSummaryEntity,
-  ContestTemplateEntity,
-} from 'generated';
+import { FastFactory } from 'generated';
 
-import {
-  indexContestVersionFactory,
-  indexerModuleFactory,
-} from './utils/dynamicIndexing';
 import { addTransaction } from './utils/sync';
 import { addChainId } from './utils/id';
-
-export const FACTORY_EVENTS_SUMMARY_KEY = 'GlobalEventsSummary';
-const FACTORY_ADDRESS = '0x3a190e45f300cbb8AB1153a90b23EE3333b02D9d';
-
-const FACTORY_EVENTS_SUMMARY: FactoryEventsSummaryEntity = {
-  id: FACTORY_EVENTS_SUMMARY_KEY,
-  address: FACTORY_ADDRESS,
-  admins: [],
-  contestTemplateCount: 0n,
-  moduleTemplateCount: 0n,
-  moduleCloneCount: 0n,
-  contestBuiltCount: 0n,
-  contestCloneCount: 0n,
-};
+import { ContestVersion, Module } from './utils/constants';
 
 /// ===============================
 /// ======= FACTORY INIT ==========
 /// ===============================
 
-FastFactoryContract.FactoryInitialized.loader(({ context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
-
-FastFactoryContract.FactoryInitialized.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
-
-  const admin = event.params.admin;
-
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
+FastFactory.FactoryInitialized.handler(async ({ event, context }) => {
   context.FactoryEventsSummary.set({
-    ...currentSummaryEntity,
-    admins: [...currentSummaryEntity.admins, admin],
+    id: `factory-${event.chainId}-${event.srcAddress}`,
+    address: event.srcAddress,
+    admins: [event.params.admin],
+    contestTemplateCount: 0n,
+    moduleTemplateCount: 0n,
+    moduleCloneCount: 0n,
+    contestCloneCount: 0n,
+    contestBuiltCount: 0n,
   });
 });
 
@@ -51,108 +25,84 @@ FastFactoryContract.FactoryInitialized.handler(({ event, context }) => {
 /// ======= ADMIN ADDED ===========
 /// ===============================
 
-FastFactoryContract.AdminAdded.loader(({ context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
+FastFactory.AdminAdded.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-FastFactoryContract.AdminAdded.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
-
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const newAdmin = event.params.admin;
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
   const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    admins: [...currentSummaryEntity.admins, newAdmin],
+    ...summary,
+    admins: [...summary.admins, event.params.admin],
   };
 
   context.FactoryEventsSummary.set(nextSummaryEntity);
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ======= ADMIN REMOVED =========
 /// ===============================
 
-FastFactoryContract.AdminRemoved.loader(({ context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
+FastFactory.AdminRemoved.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-FastFactoryContract.AdminRemoved.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const removedAdmin = event.params.admin;
-
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    admins: currentSummaryEntity.admins.filter(
-      (admin) => admin !== removedAdmin
-    ),
-  };
-
-  context.FactoryEventsSummary.set(nextSummaryEntity);
-  addTransaction(event, context.Transaction.set);
+  context.FactoryEventsSummary.set({
+    ...summary,
+    admins: summary.admins.filter((admin) => admin !== event.params.admin),
+  });
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ==== ADD CONTEST TEMPLATE =====
 /// ===============================
 
-FastFactoryContract.ContestTemplateCreated.loader(({ context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
+FastFactory.ContestTemplateCreated.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-FastFactoryContract.ContestTemplateCreated.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    contestTemplateCount: currentSummaryEntity.contestTemplateCount + 1n,
-  };
-
-  const contestTemplate: ContestTemplateEntity = {
+  context.FactoryEventsSummary.set({
+    ...summary,
+    contestTemplateCount: summary.contestTemplateCount + 1n,
+  });
+  context.ContestTemplate.set({
     id: addChainId(event, event.params.contestVersion),
     contestVersion: event.params.contestVersion,
     contestAddress: event.params.contestAddress,
     mdProtocol: event.params.contestInfo[0],
     mdPointer: event.params.contestInfo[1],
     active: true,
-  };
-
-  context.FactoryEventsSummary.set(nextSummaryEntity);
-  context.ContestTemplate.set(contestTemplate);
-  addTransaction(event, context.Transaction.set);
+  });
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ==== DELETE CONTEST TEMPLATE ==
 /// ===============================
 
-FastFactoryContract.ContestTemplateDeleted.loader(({ event, context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-  context.ContestTemplate.load(addChainId(event, event.params.contestVersion));
-});
-
-FastFactoryContract.ContestTemplateDeleted.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
-
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    contestTemplateCount: currentSummaryEntity.contestTemplateCount - 1n,
-  };
-
-  const contest = context.ContestTemplate.get(
+FastFactory.ContestTemplateDeleted.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
+  const contest = await context.ContestTemplate.get(
     addChainId(event, event.params.contestVersion)
   );
 
@@ -163,33 +113,40 @@ FastFactoryContract.ContestTemplateDeleted.handler(({ event, context }) => {
     return;
   }
 
-  const deletedContestTemplate: ContestTemplateEntity = {
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
+
+  context.FactoryEventsSummary.set({
+    ...summary,
+    contestTemplateCount: summary.contestTemplateCount - 1n,
+  });
+
+  context.ContestTemplate.set({
     ...contest,
     active: false,
-  };
-
-  context.FactoryEventsSummary.set(nextSummaryEntity);
-  context.ContestTemplate.set(deletedContestTemplate);
-  addTransaction(event, context.Transaction.set);
+  });
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ==== ADD MODULE TEMPLATE ======
 /// ===============================
 
-FastFactoryContract.ModuleTemplateCreated.loader(({ context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
+FastFactory.ModuleTemplateCreated.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-FastFactoryContract.ModuleTemplateCreated.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
-
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
   const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    moduleTemplateCount: currentSummaryEntity.moduleTemplateCount + 1n,
+    ...summary,
+    moduleTemplateCount: summary.moduleTemplateCount + 1n,
   };
 
   context.FactoryEventsSummary.set(nextSummaryEntity);
@@ -201,32 +158,26 @@ FastFactoryContract.ModuleTemplateCreated.handler(({ event, context }) => {
     mdPointer: event.params.moduleInfo[1],
     active: true,
   });
-  addTransaction(event, context.Transaction.set);
+
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// === DELETE MODULE TEMPLATE ====
 /// ===============================
 
-FastFactoryContract.ModuleTemplateDeleted.loader(({ event, context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-  context.ModuleTemplate.load(addChainId(event, event.params.moduleName));
-});
-
-FastFactoryContract.ModuleTemplateDeleted.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
-
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    moduleTemplateCount: currentSummaryEntity.moduleTemplateCount - 1n,
-  };
-
-  const newModule = context.ModuleTemplate.get(
+FastFactory.ModuleTemplateDeleted.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
+  const newModule = await context.ModuleTemplate.get(
     addChainId(event, event.params.moduleName)
   );
+
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
   if (!newModule) {
     context.log.error(
@@ -235,29 +186,38 @@ FastFactoryContract.ModuleTemplateDeleted.handler(({ event, context }) => {
     return;
   }
 
-  context.FactoryEventsSummary.set(nextSummaryEntity);
+  context.FactoryEventsSummary.set({
+    ...summary,
+    moduleTemplateCount: summary.moduleTemplateCount - 1n,
+  });
   context.ModuleTemplate.set({
     ...newModule,
     active: false,
   });
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
 
-FastFactoryContract.ModuleCloned.loader(({ event, context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-  indexerModuleFactory(event, context);
+FastFactory.ModuleCloned.contractRegister(({ event, context }) => {
+  if (event.params.moduleName === Module.HatsAllowList_v0_1_1) {
+    context.addHatsAllowList(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.TimedVotes_v0_1_1) {
+    context.addTimedVotes(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.ERC20VotesPoints_v0_1_1) {
+    context.addERC20VotesPoints(event.params.moduleAddress);
+  } else if (event.params.moduleName === Module.SBTBalancePoints_v0_1_1) {
+    context.addSBTBalancePoints(event.params.moduleAddress);
+  }
 });
 
-FastFactoryContract.ModuleCloned.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
+FastFactory.ModuleCloned.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
-
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    moduleCloneCount: currentSummaryEntity.moduleCloneCount + 1n,
-  };
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
   context.StemModule.set({
     id: event.params.moduleAddress,
@@ -268,59 +228,68 @@ FastFactoryContract.ModuleCloned.handler(({ event, context }) => {
     contestAddress: undefined,
     contest_id: undefined,
   });
-  context.FactoryEventsSummary.set(nextSummaryEntity);
-  addTransaction(event, context.Transaction.set);
+  context.FactoryEventsSummary.set({
+    ...summary,
+    moduleCloneCount: summary.moduleCloneCount + 1n,
+  });
+
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ======= CONTEST CLONED ========
 /// ===============================
 
-FastFactoryContract.ContestCloned.loader(({ event, context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-  indexContestVersionFactory(event, context);
+FastFactory.ContestCloned.contractRegister(async ({ event, context }) => {
+  if (event.params.contestVersion === ContestVersion.v0_1_0) {
+    context.addContest_v0_1_0(event.params.contestAddress);
+  } else {
+    console.error(`Contest ${event.params.contestAddress} not found`);
+  }
 });
 
-FastFactoryContract.ContestCloned.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
+FastFactory.ContestCloned.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    contestCloneCount: currentSummaryEntity.contestCloneCount + 1n,
-  };
-
-  context.FactoryEventsSummary.set(nextSummaryEntity);
+  context.FactoryEventsSummary.set({
+    ...summary,
+    contestCloneCount: summary.contestCloneCount + 1n,
+  });
   context.ContestClone.set({
     id: event.params.contestAddress,
     contestAddress: event.params.contestAddress,
     contestVersion: event.params.contestVersion,
     filterTag: event.params.filterTag,
   });
-  addTransaction(event, context.Transaction.set);
+
+  addTransaction(event, context);
 });
 
 /// ===============================
 /// ======= CONTEST BUILT =========
 /// ===============================
 
-FastFactoryContract.ContestBuilt.loader(({ event, context }) => {
-  context.FactoryEventsSummary.load(FACTORY_EVENTS_SUMMARY_KEY);
-});
+FastFactory.ContestBuilt.handler(async ({ event, context }) => {
+  const summary = await context.FactoryEventsSummary.get(
+    `factory-${event.chainId}-${event.srcAddress}`
+  );
 
-FastFactoryContract.ContestBuilt.handler(({ event, context }) => {
-  const summary = context.FactoryEventsSummary.get(FACTORY_EVENTS_SUMMARY_KEY);
+  if (!summary) {
+    context.log.error(`Factory ${event.srcAddress} not found`);
+    return;
+  }
 
-  const currentSummaryEntity: FactoryEventsSummaryEntity =
-    summary ?? FACTORY_EVENTS_SUMMARY;
+  context.FactoryEventsSummary.set({
+    ...summary,
+    contestCloneCount: summary.contestBuiltCount + 1n,
+  });
 
-  const nextSummaryEntity = {
-    ...currentSummaryEntity,
-    contestCloneCount: currentSummaryEntity.contestBuiltCount + 1n,
-  };
-
-  context.FactoryEventsSummary.set(nextSummaryEntity);
-  addTransaction(event, context.Transaction.set);
+  addTransaction(event, context);
 });
